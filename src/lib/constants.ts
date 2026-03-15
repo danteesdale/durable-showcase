@@ -64,8 +64,8 @@ export const TIMING = {
 	// Temporal retry backoff
 	// Tuned for visual simulation — real Temporal defaults are 1s initial, 2x coefficient
 	// but we use shorter intervals so the demo feels responsive
-	TEMPORAL_INITIAL_INTERVAL: 400,
-	TEMPORAL_BACKOFF_COEFFICIENT: 1.5,
+	TEMPORAL_INITIAL_INTERVAL: 150,
+	TEMPORAL_BACKOFF_COEFFICIENT: 2,
 	TEMPORAL_MAX_INTERVAL: 5000,
 
 	// Polly retry backoff
@@ -76,21 +76,22 @@ export const TIMING = {
 	POLLY_CIRCUIT_BREAKER_THRESHOLD: 2,
 	POLLY_CIRCUIT_BREAKER_RESET: 10000,
 
-	// EDA retry pipeline (matches typical defaults: 5 immediate + 3 delayed)
+	// EDA retry pipeline (models typical defaults: 5 immediate + 3 delayed)
+	// Intervals compressed for visual pacing — real delays would be 10s/20s/30s
 	NSERVICEBUS_IMMEDIATE_RETRIES: 5,
-	NSERVICEBUS_IMMEDIATE_DELAY: 150,
+	NSERVICEBUS_IMMEDIATE_DELAY: 120,
 	NSERVICEBUS_DELAYED_RETRIES: 3,
-	NSERVICEBUS_DELAYED_INTERVALS: [1500, 2500, 3500],
+	NSERVICEBUS_DELAYED_INTERVALS: [800, 1200, 1600],
 
 	// Repair ship (EDA manual intervention simulation)
 	/** How long the rocket sits stalled before the repair ship starts approaching */
-	REPAIR_STALL_DURATION: 8000,
+	REPAIR_STALL_DURATION: 7000,
 	/** How long the repair ship takes to fly in */
 	REPAIR_APPROACH_DURATION: 6000,
 	/** How long the repair ship stays docked while repairing */
-	REPAIR_DOCKED_DURATION: 3000,
+	REPAIR_DOCKED_DURATION: 5000,
 	/** How long the repair ship takes to fly away */
-	REPAIR_DEPART_DURATION: 2500
+	REPAIR_DEPART_DURATION: 3000
 };
 
 // ============================================================

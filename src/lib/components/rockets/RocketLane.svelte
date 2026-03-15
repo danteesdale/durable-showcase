@@ -10,6 +10,7 @@
 	import type { RocketSimulation } from '$lib/simulation/types';
 	import { ROCKET_CONFIG } from '$lib/constants';
 	import { MISSION } from '$lib/simulation/missionStages';
+	import { selectRocket } from '$lib/stores/ui';
 
 	interface Props {
 		rocket: RocketSimulation;
@@ -97,7 +98,13 @@
 	const isStalled = $derived(rocket.state === 'error-queue-stalled');
 </script>
 
-<div class="relative flex items-center h-14 w-full">
+<div
+	class="relative flex items-center h-14 w-full cursor-pointer hover:bg-white/[0.02] transition-colors rounded"
+	onclick={() => selectRocket(rocket.id)}
+	role="button"
+	tabindex="0"
+	onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') selectRocket(rocket.id); }}
+>
 	<!-- Status label (left side) -->
 	<div class="shrink-0 w-[190px] pr-3">
 		<RocketStatus

@@ -45,8 +45,12 @@
 </script>
 
 <div class="flex items-center gap-2 min-w-[180px]">
-	<!-- Strategy name -->
-	<span class="font-display text-sm font-semibold" style="color: {config.color};">
+	<!-- Strategy name with tooltip -->
+	<span
+		class="font-display text-sm font-semibold cursor-help"
+		style="color: {config.color};"
+		title="{config.description}&#10;&#10;Good for: {config.goodFor}"
+	>
 		{config.label}
 	</span>
 

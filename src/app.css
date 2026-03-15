@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+
+@theme {
+	/* Background */
+	--color-space-bg: #0a0e1a;
+	--color-space-bg-lighter: #111827;
+	--color-nebula-blue: #1e3a5f40;
+	--color-nebula-purple: #4c1d9540;
+
+	/* Rockets */
+	--color-temporal: #00b4d8;
+	--color-temporal-glow: #00b4d860;
+	--color-polly: #f48c06;
+	--color-polly-glow: #f48c0660;
+	--color-noretry: #e63946;
+	--color-noretry-glow: #e6394660;
+	--color-eda: #7209b7;
+	--color-eda-glow: #7209b760;
+
+	/* Status */
+	--color-success: #06d6a0;
+	--color-failure: #ff0000;
+	--color-warning: #ffd60a;
+	--color-retry: #f48c06;
+
+	/* UI */
+	--color-panel-bg: #0a0e1a90;
+	--color-panel-border: #ffffff15;
+	--color-text-primary: #e2e8f0;
+	--color-text-secondary: #94a3b8;
+	--color-text-muted: #64748b;
+
+	/* Typography */
+	--font-display: 'Space Grotesk', sans-serif;
+	--font-mono: 'JetBrains Mono', monospace;
+	--font-body: 'Inter', sans-serif;
+}
+
+html, body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background-color: var(--color-space-bg);
+	color: var(--color-text-primary);
+	font-family: var(--font-body);
+}

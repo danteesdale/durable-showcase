@@ -42,7 +42,7 @@ export const ROCKET_CONFIG: Record<StrategyType, {
 		glowColor: '#7209b760',
 		emblem: '⚡',
 		description: 'Event-driven sagas with message handlers. Messages retry then move to error queue for manual intervention.',
-		goodFor: 'Decoupled systems with eventual consistency. Provides durability via messaging but requires significant infrastructure code and operational overhead.'
+		goodFor: 'Decoupled, independently deployable services with durable messaging and eventual consistency. Orchestration is distributed across sagas, handlers, and message contracts.'
 	}
 };
 

@@ -93,8 +93,8 @@
 	</div>
 
 	<!-- Key Difference -->
-	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #c9a0f025; border: 1px solid #a070d040; color: #d4b0f0;">
-		Messages are durable — but exhausted retries require manual intervention via error queue tooling. Each stage needs a saga, handlers, and message classes (~350 lines across 20+ files).
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #c9a0f010; border: 1px solid #a070d030; color: #c8d0dc;">
+		Messages are durable — unlike Standard Retries, state survives a process crash. But exhausted retries land in the error queue, requiring manual intervention. Temporal achieves the same durability with automatic recovery and no error queue. The tradeoff for EDA: orchestration scattered across saga, handlers, and message contracts.
 	</div>
 
 	<!-- Event Log -->

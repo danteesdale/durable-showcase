@@ -53,8 +53,8 @@
 	{/if}
 
 	<!-- Key Point -->
-	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #f0a0a825; border: 1px solid #d0708040; color: #f0b8c0;">
-		This is what happens without any resilience strategy. With 250 service calls, even 99% per-call reliability gives only an 8% chance of mission success.
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #f0a0a810; border: 1px solid #d0708030; color: #c8d0dc;">
+		The baseline: no retries, no recovery, no durability. With 250 service calls, even 99% per-call reliability gives only an 8% chance of mission success. Every other strategy builds on this same business logic — the question is how much complexity you add to survive failures.
 	</div>
 
 	<!-- Event Log -->

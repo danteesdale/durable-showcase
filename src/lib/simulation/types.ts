@@ -167,6 +167,9 @@ export interface RocketSimulation {
 	repairTimeRemaining: number;       // ms until repair ship arrives and fixes
 	repairShipProgress: number;        // 0-1 for repair ship approach animation
 
+	// Completion
+	isFirstToComplete: boolean;        // True if this rocket was the first to complete
+
 	// Internal timing
 	currentCallProgress: number;       // 0-1 within the current call
 	currentCallDuration: number;       // ms for current call at 1x

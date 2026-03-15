@@ -69,7 +69,7 @@ export const TIMING = {
 	TEMPORAL_MAX_INTERVAL: 5000,
 
 	// Polly retry backoff
-	POLLY_INITIAL_INTERVAL: 1000,
+	POLLY_INITIAL_INTERVAL: 300,
 	POLLY_BACKOFF_FACTOR: 2.5,
 	POLLY_JITTER: 0.2,
 	POLLY_MAX_RETRIES: 3,
@@ -85,13 +85,13 @@ export const TIMING = {
 
 	// Repair ship (EDA manual intervention simulation)
 	/** How long the rocket sits stalled before the repair ship starts approaching */
-	REPAIR_STALL_DURATION: 7000,
+	REPAIR_STALL_DURATION: 10000,
 	/** How long the repair ship takes to fly in */
-	REPAIR_APPROACH_DURATION: 6000,
+	REPAIR_APPROACH_DURATION: 12000,
 	/** How long the repair ship stays docked while repairing */
-	REPAIR_DOCKED_DURATION: 5000,
+	REPAIR_DOCKED_DURATION: 7000,
 	/** How long the repair ship takes to fly away */
-	REPAIR_DEPART_DURATION: 3000
+	REPAIR_DEPART_DURATION: 3500
 };
 
 // ============================================================

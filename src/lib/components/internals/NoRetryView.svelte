@@ -53,7 +53,7 @@
 	{/if}
 
 	<!-- Key Point -->
-	<div class="rounded p-2 font-mono text-[11px]" style="background: {config.color}10; border: 1px solid {config.color}20; color: {config.color}99;">
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #f0a0a825; border: 1px solid #d0708040; color: #f0b8c0;">
 		This is what happens without any resilience strategy. With 250 service calls, even 99% per-call reliability gives only an 8% chance of mission success.
 	</div>
 

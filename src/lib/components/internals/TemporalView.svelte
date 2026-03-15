@@ -92,6 +92,11 @@
 		</div>
 	</div>
 
+	<!-- Key Advantage -->
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #00b4d825; border: 1px solid #00b4d840; color: #80d8f0;">
+		Durable execution preserves workflow state across any failure. Infinite retries with exponential backoff — the workflow always resumes from exactly where it left off, with no duplicate calls and no lost progress.
+	</div>
+
 	<!-- Event Log -->
 	<div class="flex-1 min-h-0">
 		<EventLog events={rocket.eventLog} color={config.color} />

@@ -59,8 +59,8 @@
 	</div>
 
 	<!-- Key Limitation -->
-	<div class="rounded p-2 font-mono text-[11px]" style="background: #e6394610; border: 1px solid #e6394620; color: #e6394699;">
-		No state preservation — if retries exhausted on any single call, all progress is lost. Process crash = start over.
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #f48c0625; border: 1px solid #f48c0640; color: #f8c080;">
+		Retries help with transient faults, but there's no state preservation — if retries are exhausted on any single call, all progress is lost. A process crash means starting over from scratch.
 	</div>
 
 	<!-- Event Log -->

@@ -8,7 +8,7 @@
 	const step = $derived(tourSteps[$tourStep]);
 	const isFirst = $derived($tourStep === 0);
 	const isLast = $derived($tourStep === tourSteps.length - 1);
-	const overallProgress = $derived(($tourStep + 1) / tourSteps.length * 100);
+
 
 	// Timer state managed outside Svelte reactivity to avoid infinite loops
 	let timerBarEl: HTMLDivElement | undefined = $state();
@@ -17,6 +17,12 @@
 	let timerStartMs = 0;
 	let currentDurationMs = 0;
 	let autoAdvanceTimeout: ReturnType<typeof setTimeout> | undefined;
+	let scheduledTimeouts: ReturnType<typeof setTimeout>[] = [];
+
+	function clearScheduledTimeouts() {
+		for (const t of scheduledTimeouts) clearTimeout(t);
+		scheduledTimeouts = [];
+	}
 
 	function executeActions(actions: TourAction[]) {
 		for (const action of actions) {
@@ -41,6 +47,15 @@
 					break;
 				case 'close-code-panel':
 					if ($codePanelOpen) toggleCodePanel();
+					break;
+				case 'infra-schedule':
+					for (const [delayMs, infraDown] of action.schedule) {
+						scheduledTimeouts.push(
+							setTimeout(() => {
+								updateFailureConfig({ infrastructureDown: infraDown });
+							}, delayMs)
+						);
+					}
 					break;
 			}
 		}
@@ -83,13 +98,18 @@
 		clearTimeout(autoAdvanceTimeout);
 	}
 
+	function stopAll() {
+		stopTimer();
+		clearScheduledTimeouts();
+	}
+
 	// React to step changes — use untrack to avoid reading state we write
 	$effect(() => {
 		const active = $tourActive;
 		const stepIdx = $tourStep;
 
 		if (!active) {
-			stopTimer();
+			stopAll();
 			return;
 		}
 
@@ -120,7 +140,8 @@
 	}
 
 	function handleSkip() {
-		stopTimer();
+		stopAll();
+		updateFailureConfig({ infrastructureDown: false });
 		if ($codePanelOpen) toggleCodePanel();
 		endTour();
 	}
@@ -136,25 +157,28 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if $tourActive && step}
-	<!-- Overlay backdrop -->
+	<!-- Overlay — semi-transparent so rockets stay visible -->
 	<div class="fixed inset-0 z-50 pointer-events-none">
-		<!-- Dark overlay -->
-		<div class="absolute inset-0 bg-black/60 pointer-events-auto"></div>
+		<div class="absolute inset-0 bg-black/30 pointer-events-auto"></div>
 
-		<!-- Tooltip card -->
+		<!-- Tour card — moves based on step position -->
 		<div
 			class="absolute z-60 pointer-events-auto"
 			style="
-				{step.position === 'center' ? 'top: 50%; left: 50%; transform: translate(-50%, -50%);' : ''}
-				{step.position === 'top' ? 'bottom: 220px; left: 50%; transform: translateX(-50%);' : ''}
-				{step.position === 'bottom' ? 'top: 120px; left: 50%; transform: translateX(-50%);' : ''}
+				{step.position === 'center' ? 'top: 45%; left: 50%; transform: translate(-50%, -50%);' : ''}
+				{step.position === 'top' ? 'bottom: 180px; left: 50%; transform: translateX(-50%);' : ''}
+				{step.position === 'bottom-left' ? 'bottom: 160px; left: 24px;' : ''}
+				{step.position === 'bottom-center' ? 'bottom: 160px; left: 50%; transform: translateX(-50%);' : ''}
+				{step.position === 'bottom-right' ? 'bottom: 160px; right: 24px;' : ''}
+				transition: all 0.4s ease-out;
 			"
 		>
+			{#key $tourStep}
 			<div
-				class="rounded-xl max-w-md shadow-2xl border overflow-hidden"
-				style="background: #111827ee; border-color: #00b4d840; box-shadow: 0 0 40px #00b4d815;"
+				class="rounded-xl max-w-md shadow-2xl border overflow-hidden tour-card-enter"
+				style="background: #0d1117f0; border-color: #00b4d840; box-shadow: 0 0 40px #00b4d815;"
 			>
-				<!-- Auto-advance countdown bar (top edge of card) -->
+				<!-- Countdown bar -->
 				<div class="h-1 w-full" style="background: #ffffff08;">
 					<div
 						bind:this={timerBarEl}
@@ -163,12 +187,22 @@
 					></div>
 				</div>
 
-				<div class="p-6">
+				<div class="p-5">
 					<!-- Step counter + countdown -->
 					<div class="flex items-center justify-between mb-3">
-						<span class="font-mono text-[10px] uppercase tracking-wider" style="color: #00b4d8;">
-							Step {$tourStep + 1} of {tourSteps.length}
-						</span>
+						<div class="flex items-center gap-2">
+							<span class="font-mono text-[10px] uppercase tracking-wider" style="color: #00b4d8;">
+								Step {$tourStep + 1} of {tourSteps.length}
+							</span>
+							<div class="flex gap-1">
+								{#each tourSteps as _, i}
+									<div
+										class="w-1.5 h-1.5 rounded-full transition-all duration-300"
+										style="background: {i === $tourStep ? '#00b4d8' : i < $tourStep ? '#00b4d860' : '#ffffff15'};"
+									></div>
+								{/each}
+							</div>
+						</div>
 						<div class="flex items-center gap-3">
 							<span
 								bind:this={countdownEl}
@@ -184,19 +218,11 @@
 						</div>
 					</div>
 
-					<!-- Overall progress bar -->
-					<div class="h-0.5 rounded-full mb-4" style="background: #ffffff10;">
-						<div
-							class="h-full rounded-full transition-all duration-500"
-							style="width: {overallProgress}%; background: #00b4d8;"
-						></div>
-					</div>
-
 					<!-- Content -->
-					<h3 class="font-display text-lg font-bold text-text-primary mb-2">
+					<h3 class="font-display text-base font-bold text-text-primary mb-1.5">
 						{step.title}
 					</h3>
-					<p class="font-body text-sm text-text-secondary leading-relaxed mb-5">
+					<p class="font-body text-sm text-text-secondary leading-relaxed mb-4">
 						{step.description}
 					</p>
 
@@ -206,23 +232,10 @@
 							onclick={handlePrev}
 							disabled={isFirst}
 							class="px-3 py-1.5 rounded text-xs font-mono transition-colors"
-							style="
-								color: {isFirst ? '#64748b40' : '#94a3b8'};
-								{isFirst ? '' : 'cursor: pointer;'}
-							"
+							style="color: {isFirst ? '#64748b40' : '#94a3b8'};"
 						>
 							&larr; Back
 						</button>
-
-						<div class="flex gap-1">
-							{#each tourSteps as _, i}
-								<div
-									class="w-1.5 h-1.5 rounded-full transition-all duration-300"
-									style="background: {i === $tourStep ? '#00b4d8' : i < $tourStep ? '#00b4d860' : '#ffffff15'};"
-								></div>
-							{/each}
-						</div>
-
 						<button
 							onclick={handleNext}
 							class="px-4 py-1.5 rounded text-xs font-mono font-bold transition-all hover:brightness-125"
@@ -233,6 +246,18 @@
 					</div>
 				</div>
 			</div>
+		{/key}
 		</div>
 	</div>
 {/if}
+
+<style>
+	.tour-card-enter {
+		animation: tour-fade-in 0.3s ease-out;
+	}
+
+	@keyframes tour-fade-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+</style>

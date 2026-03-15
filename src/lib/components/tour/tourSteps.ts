@@ -3,8 +3,8 @@ export interface TourStep {
 	description: string;
 	/** CSS selector to highlight, or null for full-screen overlay */
 	highlight: string | null;
-	/** Position of the tooltip relative to the highlight */
-	position: 'top' | 'bottom' | 'left' | 'right' | 'center';
+	/** Position of the tour card */
+	position: 'top' | 'bottom-left' | 'bottom-center' | 'bottom-right' | 'center';
 	/** Automated actions to perform when this step activates */
 	actions?: TourAction[];
 	/** Delay before auto-advancing to next step (ms) */
@@ -18,7 +18,9 @@ export type TourAction =
 	| { type: 'launch' }
 	| { type: 'reset' }
 	| { type: 'open-code-panel' }
-	| { type: 'close-code-panel' };
+	| { type: 'close-code-panel' }
+	/** Toggle infra on/off on a schedule. Each entry is [delayMs, infraDown]. */
+	| { type: 'infra-schedule'; schedule: Array<[number, boolean]> };
 
 export const tourSteps: TourStep[] = [
 	{
@@ -34,7 +36,7 @@ export const tourSteps: TourStep[] = [
 		description:
 			'Four identical rocket missions, each using a different strategy for handling failure. Same business logic, different resilience approaches.',
 		highlight: '[data-tour="rocket-lanes"]',
-		position: 'bottom',
+		position: 'center',
 		durationMs: 8000
 	},
 	{
@@ -78,7 +80,7 @@ export const tourSteps: TourStep[] = [
 		description:
 			'No Retries explodes on the first failure. Standard Retries burns through its 3 attempts quickly and crashes. Event-Driven has more retries but can still exhaust them — and when it does, messages land in an error queue. Only Temporal keeps going.',
 		highlight: '[data-tour="rocket-lanes"]',
-		position: 'bottom',
+		position: 'bottom-left',
 		durationMs: 10000
 	},
 	{
@@ -86,39 +88,38 @@ export const tourSteps: TourStep[] = [
 		description:
 			'The Temporal rocket pauses, waits, and resumes from exactly where it stopped. No data lost, no duplicate calls. Infinite retries with full state preservation — it always completes.',
 		highlight: '[data-tour="rocket-lanes"]',
-		position: 'bottom',
+		position: 'bottom-left',
 		durationMs: 8000
 	},
 	{
-		title: 'Total Infrastructure Failure',
+		title: 'Infrastructure Goes Down',
 		description:
-			'Now watch what happens when the entire infrastructure goes down. Every strategy hits a wall — but pay attention to how each one responds.',
+			'Infrastructure just went down completely. No Retries and Standard Retries are immediately eliminated. The Event-Driven rocket is burning through its retry budget. Temporal calmly pauses and waits.',
 		highlight: '[data-tour="infra-toggle"]',
 		position: 'top',
 		actions: [
 			{ type: 'reset' },
+			// 100% availability — infra-down overrides anyway, and when it comes back
+			// Temporal gets a clean runway with zero call failures
 			{ type: 'set-availability', value: 100 },
 			{ type: 'set-infra-down', value: true },
-			{ type: 'launch' }
+			{ type: 'launch' },
+			// EDA exhausts 8 retries in ~4s, then 7s stall before repair ship dispatched
+			// Bring infra back at 8s — Temporal backoff is still small (~1-2s), resumes quickly
+			// EDA is mid-stall, repair ship hasn't even arrived yet
+			{ type: 'infra-schedule', schedule: [
+				[8000, false],
+			]},
 		],
+		durationMs: 15000
+	},
+	{
+		title: 'Infrastructure Recovers',
+		description:
+			'Infrastructure is back. Watch the difference: Temporal resumes instantly and races ahead. The Event-Driven rocket is still stuck — waiting for a repair ship to arrive, dock, inspect the error queue, and manually retry the failed messages.',
+		highlight: '[data-tour="rocket-lanes"]',
+		position: 'bottom-center',
 		durationMs: 18000
-	},
-	{
-		title: 'Manual Intervention Required',
-		description:
-			'No Retries and Standard Retries are gone. The Event-Driven rocket has exhausted all 8 retries and stalled — a repair ship has been dispatched for manual error queue intervention. Meanwhile, Temporal simply waits with its state fully preserved.',
-		highlight: '[data-tour="rocket-lanes"]',
-		position: 'bottom',
-		durationMs: 10000
-	},
-	{
-		title: 'Recovery',
-		description:
-			'Infrastructure is back. Temporal resumes instantly from where it left off. The Event-Driven rocket needed manual intervention to recover. That\'s the difference: automatic resilience vs. operational overhead.',
-		highlight: '[data-tour="rocket-lanes"]',
-		position: 'bottom',
-		actions: [{ type: 'set-infra-down', value: false }],
-		durationMs: 10000
 	},
 	{
 		title: 'The Code Tells the Story',

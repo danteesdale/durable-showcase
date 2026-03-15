@@ -93,7 +93,7 @@
 	</div>
 
 	<!-- Key Difference -->
-	<div class="rounded p-2 font-mono text-[11px]" style="background: {config.color}10; border: 1px solid {config.color}20; color: {config.color}99;">
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #c9a0f025; border: 1px solid #a070d040; color: #d4b0f0;">
 		Messages are durable — but exhausted retries require manual intervention via error queue tooling. Each stage needs a saga, handlers, and message classes (~350 lines across 20+ files).
 	</div>
 

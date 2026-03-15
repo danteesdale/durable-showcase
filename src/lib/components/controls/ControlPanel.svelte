@@ -146,7 +146,7 @@
 
 	<div class="flex items-end gap-6 flex-wrap">
 		<!-- Service Availability -->
-		<div class="flex flex-col gap-1 min-w-[160px]" class:opacity-40={controlsDisabled}>
+		<div class="flex flex-col gap-1 min-w-[160px]" class:opacity-40={controlsDisabled} data-tour="availability">
 			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">
 				Service Availability
 			</span>
@@ -213,7 +213,7 @@
 		</div>
 
 		<!-- Infrastructure Down -->
-		<div class="flex flex-col gap-1" class:opacity-40={controlsDisabled}>
+		<div class="flex flex-col gap-1" class:opacity-40={controlsDisabled} data-tour="infra-toggle">
 			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">
 				Infrastructure
 			</span>
@@ -264,6 +264,7 @@
 				↻ Reset
 			</button>
 			<button
+				data-tour="launch-btn"
 				onclick={handleLaunch}
 				disabled={$isRunning}
 				class="px-5 py-2 rounded font-display font-bold text-sm transition-all"

@@ -119,60 +119,129 @@ const act = proxyActivities<typeof activities>({
 });
 
 export async function rocketMission(missionId: string) {
-  await act.ignition(missionId);
-  await act.launch(missionId);
-  await act.atmosphericExit(missionId);
-  await act.deepSpaceNav(missionId);
-  await act.orbitalInsertion(missionId);
-  await act.docking(missionId);
+  // Ignition
+  const engine = await act.startEngine(missionId);
+  await act.pressurizeFuel(engine.id);
+  await act.verifyAllClear(missionId);
+
+  // Launch
+  await act.authorizeLaunch(missionId);
+  await act.retractArm(missionId);
+  await act.mainEngineStart(missionId);
+  await act.initDownlink(missionId);
+
+  // Atmospheric Exit
+  await act.activateFCS(missionId);
+  await act.monitorHeatShield(missionId);
+  await act.activateSBand(missionId);
+
+  // Deep Space Navigation
+  await act.calculateBurn(missionId);
+  await act.executeManeuver(missionId);
+
+  // Orbital Insertion
+  await act.calculateInsertion(missionId);
+  await act.enableStationKeeping(missionId);
+
+  // Docking
+  await act.extendMechanism(missionId);
+  await act.finalApproach(missionId);
+  await act.confirmCapture(missionId);
 }
 
-// Reads like the no-retry version.
-// Retries, state, timeouts — handled by the platform.
-// If the process crashes mid-flight, Temporal replays
-// and resumes from the exact point of failure.`
+// Each activity is one operation — the unit of retry.
+// If monitorHeatShield() fails, only that call retries.
+// Retries, state, timeouts — handled by the platform.`
 			},
 			{
 				filename: 'activities.ts',
 				language: 'typescript',
-				code: `// Plain async functions — no orchestration logic,
+				code: `// Each activity wraps one operation.
+// Plain async functions — no orchestration logic,
 // no message routing, no saga state.
-// Same API calls as every other approach.
 
-export async function ignition(missionId: string) {
-  const engine = await engineService.start(missionId);
-  await fuelSystem.pressurize(engine.id);
-  await safety.verifyAllClear(missionId);
+// Ignition
+export async function startEngine(id: string) {
+  return await engineService.start(id);
+}
+export async function pressurizeFuel(engineId: string) {
+  await fuelSystem.pressurize(engineId);
+}
+export async function verifyAllClear(id: string) {
+  await safety.verifyAllClear(id);
 }
 
-export async function launch(missionId: string) {
-  await launchControl.authorize(missionId);
-  await tower.retractArm(missionId);
-  await propulsion.mainEngineStart(missionId);
-  await telemetry.initDownlink(missionId);
+// Launch
+export async function authorizeLaunch(id: string) {
+  await launchControl.authorize(id);
+}
+export async function retractArm(id: string) {
+  await tower.retractArm(id);
+}
+export async function mainEngineStart(id: string) {
+  await propulsion.mainEngineStart(id);
+}
+export async function initDownlink(id: string) {
+  await telemetry.initDownlink(id);
 }
 
-export async function atmosphericExit(missionId: string) {
-  await guidance.activateFCS(missionId);
-  await aerodynamics.monitorHeatShield(missionId);
-  await comms.activateSBand(missionId);
+// Atmospheric Exit
+export async function activateFCS(id: string) {
+  await guidance.activateFCS(id);
+}
+export async function monitorHeatShield(id: string) {
+  await aerodynamics.monitorHeatShield(id);
+}
+export async function activateSBand(id: string) {
+  await comms.activateSBand(id);
 }
 
-export async function deepSpaceNav(missionId: string) {
-  await navigation.calculateBurn(missionId);
-  await propulsion.executeManeuver(missionId);
+// Deep Space Navigation
+export async function calculateBurn(id: string) {
+  await navigation.calculateBurn(id);
+}
+export async function executeManeuver(id: string) {
+  await propulsion.executeManeuver(id);
 }
 
-export async function orbitalInsertion(missionId: string) {
-  await orbital.calculateInsertion(missionId);
-  await rcs.enableStationKeeping(missionId);
+// Orbital Insertion
+export async function calculateInsertion(id: string) {
+  await orbital.calculateInsertion(id);
+}
+export async function enableStationKeeping(id: string) {
+  await rcs.enableStationKeeping(id);
 }
 
-export async function docking(missionId: string) {
-  await dockingPort.extendMechanism(missionId);
-  await rcs.finalApproach(missionId);
-  await dockingPort.confirmCapture(missionId);
+// Docking
+export async function extendMechanism(id: string) {
+  await dockingPort.extendMechanism(id);
+}
+export async function finalApproach(id: string) {
+  await rcs.finalApproach(id);
+}
+export async function confirmCapture(id: string) {
+  await dockingPort.confirmCapture(id);
 }`
+			},
+			{
+				filename: 'worker.ts',
+				language: 'typescript',
+				code: `import { Worker, NativeConnection } from '@temporalio/worker';
+import * as activities from './activities';
+
+const connection = await NativeConnection.connect({
+  address: 'temporal:7233',
+});
+
+const worker = await Worker.create({
+  connection,
+  namespace: 'default',
+  taskQueue: 'rocket-missions',
+  workflowsPath: require.resolve('./workflow'),
+  activities,
+});
+
+await worker.run();`
 			}
 		],
 		complexity: 'Medium',
@@ -479,12 +548,9 @@ recoverability.Delayed(d => {
 });
 
 // After 8 total retries:
-// Message goes to error queue.
-// Someone gets paged.
-// Opens ServicePulse.
-// Investigates the failed message.
-// Manually retries.
-// Hopes it works this time.`
+// Message moves to the error queue.
+// Requires manual review and retry
+// via error management tooling.`
 			}
 		],
 		complexity: 'High',

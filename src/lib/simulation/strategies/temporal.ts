@@ -24,14 +24,6 @@ export const temporalStrategy: ExecutionStrategy = {
 		rocket.currentBackoffMs = interval;
 		rocket.backoffTimerRemaining = interval;
 
-		// Preserve state (Temporal's key feature)
-		rocket.preservedState = {
-			stageIndex: rocket.currentStageIndex,
-			groupIndex: rocket.currentGroupIndex,
-			callIndex: rocket.currentCallIndex,
-			completedCalls: rocket.completedCalls
-		};
-
 		// Add workflow history events
 		const currentStage = rocket.stageResults[rocket.currentStageIndex];
 		const currentGroup = currentStage?.[rocket.currentGroupIndex];

@@ -14,6 +14,9 @@ export const selectedRocket = writable<StrategyType>('temporal');
 /** Whether the code comparison panel is open */
 export const codePanelOpen = writable<boolean>(false);
 
+/** Which strategy to show in the code panel (set externally when opening via rocket menu) */
+export const codePanelStrategy = writable<StrategyType | null>(null);
+
 /** Whether the guided tour is active */
 export const tourActive = writable<boolean>(false);
 
@@ -34,6 +37,11 @@ export function toggleInternalsPanel() {
 export function selectRocket(type: StrategyType) {
 	selectedRocket.set(type);
 	internalsPanelOpen.set(true);
+}
+
+export function selectRocketCode(type: StrategyType) {
+	codePanelStrategy.set(type);
+	codePanelOpen.set(true);
 }
 
 export function toggleCodePanel() {

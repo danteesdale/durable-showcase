@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { codePanelOpen, toggleCodePanel } from '$lib/stores/ui';
+	import { codePanelOpen, codePanelStrategy, toggleCodePanel } from '$lib/stores/ui';
 	import { ROCKET_CONFIG } from '$lib/constants';
 	import { codeSnippets } from './codeSnippets';
 	import { highlightCode } from '$lib/highlight';
@@ -8,6 +8,14 @@
 	const strategyTabs: StrategyType[] = ['no-retry', 'polly', 'temporal', 'eda'];
 	let selectedTab = $state<StrategyType>('no-retry');
 	let fileIndexPerStrategy = $state<Record<string, number>>({});
+
+	// Sync with external strategy selection (e.g. from rocket context menu)
+	$effect(() => {
+		if ($codePanelStrategy) {
+			selectedTab = $codePanelStrategy;
+			codePanelStrategy.set(null);
+		}
+	});
 
 	const snippet = $derived(codeSnippets[selectedTab]);
 	const config = $derived(ROCKET_CONFIG[selectedTab]);
@@ -132,7 +140,7 @@
 			{/if}
 
 			<!-- Code Block -->
-			<div class="mx-4 rounded-lg overflow-hidden flex-1 min-h-0" style="border: 1px solid {config.color}20; {snippet.files.length > 1 ? 'border-top-left-radius: 0;' : ''}">
+			<div class="mx-4 rounded-lg overflow-hidden flex-1 min-h-0 flex flex-col" style="border: 1px solid {config.color}20; {snippet.files.length > 1 ? 'border-top-left-radius: 0;' : ''}">
 				{#if snippet.files.length === 1}
 					<!-- Single file: show filename as title bar -->
 					<div
@@ -142,7 +150,7 @@
 						{currentFile.filename}
 					</div>
 				{/if}
-				<div class="overflow-auto h-full shiki-container">
+				<div class="overflow-auto flex-1 min-h-0 shiki-container">
 					{#if highlightedHtml}
 						{@html highlightedHtml}
 					{:else}

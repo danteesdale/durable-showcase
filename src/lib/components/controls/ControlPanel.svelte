@@ -74,23 +74,34 @@
 	// Chaos action display fade
 	let actionVisible = $state(false);
 	let actionText = $state('');
+	let isRestore = $state(false);
+	let panelFlash = $state(false);
 	let fadeTimeout: ReturnType<typeof setTimeout>;
+	let flashTimeout: ReturnType<typeof setTimeout>;
 
 	$effect(() => {
 		const action = $lastChaosAction;
 		if (action) {
 			actionText = action.message;
+			isRestore = /restored|recovered|cleared/i.test(action.message);
 			actionVisible = true;
+			panelFlash = true;
 			clearTimeout(fadeTimeout);
+			clearTimeout(flashTimeout);
 			fadeTimeout = setTimeout(() => {
 				actionVisible = false;
-			}, 2500);
+			}, 3500);
+			flashTimeout = setTimeout(() => {
+				panelFlash = false;
+			}, 800);
 		}
 	});
 </script>
 
 <div
-	class="relative z-20 border-t backdrop-blur-xl px-6 py-4"
+	class="relative z-20 border-t backdrop-blur-xl px-6 py-4 transition-all duration-300"
+	class:chaos-panel-flash={panelFlash && !isRestore}
+	class:chaos-panel-restore={panelFlash && isRestore}
 	style="background: var(--color-panel-bg); border-color: var(--color-panel-border);"
 >
 	<!-- Header -->
@@ -129,10 +140,15 @@
 			<!-- Chaos action ticker -->
 			{#if isChaos && actionVisible}
 				<div
-					class="font-mono text-[10px] px-2 py-0.5 rounded chaos-action-flash"
-					style="background: #f48c0615; color: #f48c06;"
+					class="font-mono text-xs font-bold px-3 py-1.5 rounded-md chaos-action-flash"
+					style="
+						background: {isRestore ? '#06d6a020' : '#f48c0625'};
+						color: {isRestore ? '#06d6a0' : '#f48c06'};
+						border: 1px solid {isRestore ? '#06d6a050' : '#f48c0650'};
+						box-shadow: 0 0 16px {isRestore ? '#06d6a025' : '#f48c0625'};
+					"
 				>
-					🐵 {actionText}
+					{isRestore ? '✅' : '🐵'} {actionText}
 				</div>
 			{/if}
 		</div>
@@ -297,7 +313,26 @@
 	}
 
 	@keyframes action-flash {
-		0% { opacity: 0; transform: translateX(-5px); }
-		100% { opacity: 1; transform: translateX(0); }
+		0% { opacity: 0; transform: translateX(-8px) scale(0.95); }
+		50% { opacity: 1; transform: translateX(2px) scale(1.02); }
+		100% { opacity: 1; transform: translateX(0) scale(1); }
+	}
+
+	.chaos-panel-flash {
+		animation: panel-flash-orange 0.8s ease-out;
+	}
+
+	.chaos-panel-restore {
+		animation: panel-flash-green 0.8s ease-out;
+	}
+
+	@keyframes panel-flash-orange {
+		0% { border-color: #f48c06; box-shadow: inset 0 1px 20px #f48c0620, 0 -2px 12px #f48c0615; }
+		100% { border-color: var(--color-panel-border); box-shadow: none; }
+	}
+
+	@keyframes panel-flash-green {
+		0% { border-color: #06d6a0; box-shadow: inset 0 1px 20px #06d6a020, 0 -2px 12px #06d6a015; }
+		100% { border-color: var(--color-panel-border); box-shadow: none; }
 	}
 </style>

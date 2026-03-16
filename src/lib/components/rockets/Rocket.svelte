@@ -69,110 +69,155 @@
 	style="transform: translateY({$hoverY}px);"
 >
 	{#if !isExploded}
-		<!-- Rocket SVG — pointed nose, tapered body, swept fins, engine bell -->
 		<svg
-			viewBox="0 0 66 36"
-			width="66"
-			height="36"
+			viewBox="0 0 82 40"
+			width="82"
+			height="40"
 			class="relative z-10 transition-opacity duration-300"
 			style="opacity: {state === 'paused' ? 0.7 : 1}; filter: {state === 'error-queue-stalled' ? 'saturate(0.5)' : 'none'};"
 		>
 			<defs>
+				<!-- Metallic hull gradient (top-lit) -->
 				<linearGradient id="hull-{strategyType}" x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stop-color="{config.color}" stop-opacity="0.95" />
-					<stop offset="50%" stop-color="{config.color}" stop-opacity="0.75" />
-					<stop offset="100%" stop-color="{config.color}" stop-opacity="0.5" />
+					<stop offset="0%" stop-color="#e8e8ee" />
+					<stop offset="20%" stop-color="#c8c8d0" />
+					<stop offset="55%" stop-color="#888894" />
+					<stop offset="85%" stop-color="#585864" />
+					<stop offset="100%" stop-color="#686874" />
 				</linearGradient>
-				<linearGradient id="nose-{strategyType}" x1="0" y1="0" x2="1" y2="0">
-					<stop offset="0%" stop-color="{config.color}" stop-opacity="0.9" />
-					<stop offset="100%" stop-color="white" stop-opacity="0.3" />
+
+				<!-- Nose metallic -->
+				<linearGradient id="nose-{strategyType}" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stop-color="#d8d8e0" />
+					<stop offset="50%" stop-color="#9898a4" />
+					<stop offset="100%" stop-color="#686874" />
 				</linearGradient>
-				<radialGradient id="window-{strategyType}" cx="0.4" cy="0.35" r="0.6">
-					<stop offset="0%" stop-color="{config.color}" stop-opacity="0.5" />
-					<stop offset="60%" stop-color="#0a0e1a" stop-opacity="0.9" />
-					<stop offset="100%" stop-color="#0a0e1a" stop-opacity="1" />
+
+				<!-- Engine interior heat -->
+				<radialGradient id="engine-{strategyType}" cx="80%" cy="50%" r="70%">
+					<stop offset="0%" stop-color="#ffaa55" />
+					<stop offset="50%" stop-color="#cc4400" />
+					<stop offset="100%" stop-color="#331100" />
 				</radialGradient>
-				<linearGradient id="exhaust-{strategyType}" x1="1" y1="0" x2="0" y2="0">
-					<stop offset="0%" stop-color="{config.color}" stop-opacity="0.8" />
-					<stop offset="40%" stop-color="#f48c06" stop-opacity="0.6" />
+
+				<!-- Exhaust core (white-hot center) -->
+				<radialGradient id="exhaust-core-{strategyType}" cx="85%" cy="50%" r="60%">
+					<stop offset="0%" stop-color="white" stop-opacity="0.95" />
+					<stop offset="40%" stop-color="#bbddff" stop-opacity="0.7" />
+					<stop offset="100%" stop-color="{config.color}" stop-opacity="0" />
+				</radialGradient>
+
+				<!-- Exhaust outer (orange plume) -->
+				<linearGradient id="exhaust-outer-{strategyType}" x1="1" y1="0" x2="0" y2="0">
+					<stop offset="0%" stop-color="{config.color}" stop-opacity="0.5" />
+					<stop offset="40%" stop-color="#f48c06" stop-opacity="0.35" />
 					<stop offset="100%" stop-color="#ff4400" stop-opacity="0" />
 				</linearGradient>
+
+				<!-- Window glass -->
+				<radialGradient id="window-{strategyType}" cx="0.35" cy="0.3" r="0.6">
+					<stop offset="0%" stop-color="#aaddff" stop-opacity="0.5" />
+					<stop offset="50%" stop-color="#1a2a4a" />
+					<stop offset="100%" stop-color="#0a0e1a" />
+				</radialGradient>
+
+				<!-- Glow filter for exhaust -->
 				<filter id="glow-{strategyType}">
 					<feGaussianBlur stdDeviation="2" result="blur" />
 					<feComposite in="SourceGraphic" in2="blur" operator="over" />
 				</filter>
 			</defs>
 
-			<!-- Exhaust flame -->
+			<!-- === EXHAUST (behind everything) === -->
+			<!-- Outer plume -->
 			<ellipse
-				cx="5"
-				cy="18"
-				rx="8"
-				ry="4"
-				fill="url(#exhaust-{strategyType})"
+				cx="5" cy="20" rx="12" ry="4.5"
+				fill="url(#exhaust-outer-{strategyType})"
 				opacity={exhaustOpacity}
 				filter="url(#glow-{strategyType})"
 			>
 				{#if state === 'in-progress'}
-					<animate attributeName="rx" values="6;10;6" dur="0.15s" repeatCount="indefinite" />
-					<animate attributeName="ry" values="3;5;3" dur="0.2s" repeatCount="indefinite" />
-					<animate attributeName="opacity" values="0.7;1;0.7" dur="0.12s" repeatCount="indefinite" />
+					<animate attributeName="rx" values="10;14;10" dur="0.15s" repeatCount="indefinite" />
+					<animate attributeName="ry" values="3.5;5.5;3.5" dur="0.2s" repeatCount="indefinite" />
+				{/if}
+			</ellipse>
+			<!-- Hot core -->
+			<ellipse
+				cx="9" cy="20" rx="5" ry="2"
+				fill="url(#exhaust-core-{strategyType})"
+				opacity={exhaustOpacity}
+			>
+				{#if state === 'in-progress'}
+					<animate attributeName="rx" values="4;6;4" dur="0.12s" repeatCount="indefinite" />
+					<animate attributeName="ry" values="1.5;2.5;1.5" dur="0.15s" repeatCount="indefinite" />
+					<animate attributeName="opacity" values="0.7;1;0.7" dur="0.1s" repeatCount="indefinite" />
 				{/if}
 			</ellipse>
 
-			<!-- Engine bell / nozzle -->
-			<path d="M10,12 L14,14 L14,22 L10,24 Z" fill="#666" stroke="#888" stroke-width="0.4" />
-			<path d="M10,13 L12,14.5 L12,21.5 L10,23 Z" fill="#444" />
+			<!-- === ENGINE BELL === -->
+			<path d="M10,15.5 L15,16.5 L15,23.5 L10,24.5 Z" fill="#5a5a64" stroke="#7a7a84" stroke-width="0.4" />
+			<path d="M10,16.5 L13,17 L13,23 L10,23.5 Z" fill="url(#engine-{strategyType})" />
 
-			<!-- Bottom fin (behind body) -->
-			<path d="M14,24 L10,32 L22,24 Z" fill="{config.color}" opacity="0.6" stroke="{config.color}" stroke-width="0.3" stroke-opacity="0.4" />
+			<!-- === FINS (behind body) === -->
+			<!-- Bottom main fin -->
+			<path d="M15,24 L10,33 L26,24 Z" fill="{config.color}" opacity="0.7" stroke="{config.color}" stroke-width="0.3" stroke-opacity="0.4" />
+			<!-- Top main fin -->
+			<path d="M15,16 L10,7 L26,16 Z" fill="{config.color}" opacity="0.7" stroke="{config.color}" stroke-width="0.3" stroke-opacity="0.4" />
+			<!-- Small stabilizers -->
+			<path d="M18,16 L14,11 L24,16 Z" fill="{config.color}" opacity="0.45" />
+			<path d="M18,24 L14,29 L24,24 Z" fill="{config.color}" opacity="0.45" />
 
-			<!-- Top fin (behind body) -->
-			<path d="M14,12 L10,4 L22,12 Z" fill="{config.color}" opacity="0.6" stroke="{config.color}" stroke-width="0.3" stroke-opacity="0.4" />
-
-			<!-- Main fuselage — tapered cylinder -->
+			<!-- === FUSELAGE (slimmer body: y=16 to y=24) === -->
 			<path
-				d="M14,12 L50,12.5 Q54,13 55,15 L55,21 Q54,23 50,23.5 L14,24 Z"
+				d="M15,16 L58,16.3 Q62,16.5 63,17.5 L63,22.5 Q62,23.5 58,23.7 L15,24 Z"
 				fill="url(#hull-{strategyType})"
-				stroke="{config.color}"
-				stroke-width="0.4"
-				stroke-opacity="0.5"
-			/>
-
-			<!-- Body highlight / reflection stripe -->
-			<path
-				d="M16,14 L48,14.5 Q52,15 52,15.5 L52,16 Q52,16 48,15.5 L16,15 Z"
-				fill="white"
-				opacity="0.12"
-			/>
-
-			<!-- Nose cone — rounded bullet shape -->
-			<path
-				d="M50,12.5 Q58,13 62,18 Q58,23 50,23.5 Q54,23 55,21 L55,15 Q54,13 50,12.5 Z"
-				fill="url(#nose-{strategyType})"
-				stroke="{config.color}"
+				stroke="#9a9aa4"
 				stroke-width="0.3"
-				stroke-opacity="0.4"
 			/>
 
-			<!-- Nose tip highlight -->
+			<!-- Strategy color accent stripe -->
 			<path
-				d="M55,15.5 Q58,16.5 59,18 Q57,17 55,16.5 Z"
-				fill="white"
-				opacity="0.2"
+				d="M19,19.2 L58,19.4 Q61,19.5 62,19.8 L62,20.8 Q61,21.1 58,21.2 L19,21.4 Z"
+				fill="{config.color}"
+				opacity="0.55"
 			/>
 
-			<!-- Window / porthole -->
-			<circle cx="43" cy="18" r="3" fill="url(#window-{strategyType})" stroke="{config.color}" stroke-width="0.6" opacity="0.9" />
-			<circle cx="42.2" cy="17.2" r="1" fill="{config.color}" opacity="0.25" />
+			<!-- Specular highlight (top) -->
+			<path
+				d="M19,16.8 L56,17.1 Q60,17.2 61,17.5 L61,18 Q60,17.8 56,17.5 L19,17.2 Z"
+				fill="white"
+				opacity="0.22"
+			/>
 
-			<!-- Fuselage detail rings -->
-			<line x1="26" y1="13.5" x2="26" y2="22.5" stroke="{config.color}" stroke-width="0.3" opacity="0.3" />
-			<line x1="36" y1="13.2" x2="36" y2="22.8" stroke="{config.color}" stroke-width="0.3" opacity="0.3" />
+			<!-- Panel lines -->
+			<line x1="30" y1="16.8" x2="30" y2="23.2" stroke="#8888a0" stroke-width="0.3" opacity="0.2" />
+			<line x1="42" y1="16.6" x2="42" y2="23.4" stroke="#8888a0" stroke-width="0.3" opacity="0.2" />
 
-			<!-- Small stabilizer fins near engine -->
-			<path d="M16,12.5 L13,8 L20,12.5 Z" fill="{config.color}" opacity="0.45" />
-			<path d="M16,23.5 L13,28 L20,23.5 Z" fill="{config.color}" opacity="0.45" />
+			<!-- === NOSE CONE (sharper, longer) === -->
+			<path
+				d="M58,16.3 Q68,17 76,20 Q68,23 58,23.7 Q62,23.5 63,22.5 L63,17.5 Q62,16.5 58,16.3 Z"
+				fill="url(#nose-{strategyType})"
+				stroke="#9a9aa4"
+				stroke-width="0.3"
+			/>
+
+			<!-- Nose tip strategy color accent -->
+			<path
+				d="M71,18.5 Q74,19.5 76,20 Q74,20.5 71,21.5 Q73.5,20.5 73.5,20 Q73.5,19.5 71,18.5 Z"
+				fill="{config.color}"
+				opacity="0.6"
+			/>
+
+			<!-- Nose specular highlight -->
+			<path d="M63,17.5 Q67,18.5 70,20 Q66.5,19 63,18.5 Z" fill="white" opacity="0.2" />
+
+			<!-- === PORTHOLES (row of small windows) === -->
+			<circle cx="48" cy="20" r="1.8" fill="url(#window-{strategyType})" stroke="#8888a0" stroke-width="0.4" />
+			<circle cx="53" cy="20" r="1.8" fill="url(#window-{strategyType})" stroke="#8888a0" stroke-width="0.4" />
+			<circle cx="58" cy="20" r="1.5" fill="url(#window-{strategyType})" stroke="#8888a0" stroke-width="0.4" />
+			<!-- Glass reflections -->
+			<circle cx="47.5" cy="19.5" r="0.6" fill="white" opacity="0.15" />
+			<circle cx="52.5" cy="19.5" r="0.6" fill="white" opacity="0.15" />
 		</svg>
 
 		<!-- Shield effect (Temporal paused state) -->
@@ -184,8 +229,8 @@
 				<div
 					class="rounded-full border-2 animate-pulse"
 					style="
-						width: 90px;
-						height: 52px;
+						width: 106px;
+						height: 56px;
 						border-color: {config.color}80;
 						box-shadow: 0 0 20px {config.color}40, inset 0 0 15px {config.color}20;
 					"
@@ -236,7 +281,7 @@
 		{/if}
 	{:else}
 		<!-- Explosion -->
-		<div class="relative w-[66px] h-[36px] flex items-center justify-center">
+		<div class="relative w-[82px] h-[40px] flex items-center justify-center">
 			<div
 				class="absolute w-16 h-16 rounded-full animate-ping"
 				style="background: radial-gradient(circle, #ff440080, #ff000040, transparent); animation-duration: 1s; animation-iteration-count: 1;"

@@ -85,6 +85,33 @@
 		}
 	};
 
+	// Cascade sweep for first-to-complete: compute a flat index for each dot
+	// so we can assign staggered CSS animation delays
+	let cascadeActive = $state(false);
+
+	// Build a flat list of dot indices for stagger timing
+	const dotFlatIndex = $derived(() => {
+		const boundaries = stageBoundaries();
+		const indices: number[][] = []; // [stageIdx][groupIdx] → flat index
+		let idx = 0;
+		for (let s = 0; s < boundaries.length; s++) {
+			indices[s] = [];
+			for (let g = 0; g < boundaries[s].groups; g++) {
+				indices[s][g] = idx++;
+			}
+		}
+		return { indices, total: idx };
+	});
+
+	$effect(() => {
+		if (rocket.isFirstToComplete && !cascadeActive) {
+			cascadeActive = true;
+		}
+		if (rocket.state === 'idle') {
+			cascadeActive = false;
+		}
+	});
+
 	// Track effect states
 	const showExplosion = $derived(rocket.state === 'failed');
 	const showSuccess = $derived(rocket.state === 'completed');
@@ -118,7 +145,14 @@
 	<!-- Track area -->
 	<div class="relative flex-1 h-full flex items-center" bind:this={trackEl}>
 		<!-- Track line -->
-		<div class="absolute left-0 right-8 h-px top-1/2" style="background: {config.color}20;"></div>
+		<div
+			class="absolute left-0 right-8 top-1/2 transition-all duration-1000"
+			style="
+				height: {cascadeActive ? '2px' : '1px'};
+				background: {cascadeActive ? '#ffd60a60' : config.color + '20'};
+				{cascadeActive ? 'box-shadow: 0 0 8px #ffd60a40;' : ''}
+			"
+		></div>
 
 		<!-- Stage markers + cluster dots -->
 		{#each stageBoundaries() as stage, stageIdx}
@@ -141,14 +175,19 @@
 				{@const groupProgress = (groupIdx + 0.5) / stage.groups}
 				{@const dotLeft = (stage.start + (stage.end - stage.start) * groupProgress) * 100}
 				{@const status = getGroupStatus(stageIdx, groupIdx)}
+				{@const flatIdx = dotFlatIndex().indices[stageIdx]?.[groupIdx] ?? 0}
+				{@const sweepDelay = flatIdx * 60}
 				<div
-					class="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border transition-all duration-200"
+					class="absolute top-1/2 -translate-y-1/2 rounded-full border transition-all duration-200 {cascadeActive ? 'cascade-dot' : ''}"
 					style="
 						left: {dotLeft}%;
 						transform: translateX(-50%) translateY(-50%);
-						background: {status === 'pending' ? 'transparent' : clusterColor(status)}30;
-						border-color: {clusterColor(status)};
-						{status === 'in-progress' ? 'box-shadow: 0 0 6px ' + clusterColor(status) + '80; animation: pulse 1.5s ease-in-out infinite;' : ''}
+						width: {cascadeActive ? '0.875rem' : '0.625rem'};
+						height: {cascadeActive ? '0.875rem' : '0.625rem'};
+						background: {cascadeActive ? '#ffd60a50' : status === 'pending' ? 'transparent' : clusterColor(status) + '30'};
+						border-color: {cascadeActive ? '#ffd60a' : clusterColor(status)};
+						{cascadeActive ? `box-shadow: 0 0 8px #ffd60a80, 0 0 16px #ffd60a40; animation-delay: ${sweepDelay}ms;` : ''}
+						{!cascadeActive && status === 'in-progress' ? 'box-shadow: 0 0 6px ' + clusterColor(status) + '80; animation: pulse 1.5s ease-in-out infinite;' : ''}
 					"
 					title="{rocket.stageResults[stageIdx]?.[groupIdx]?.groupName ?? ''}: {rocket.stageResults[stageIdx]?.[groupIdx]?.completedCalls ?? 0}/{rocket.stageResults[stageIdx]?.[groupIdx]?.totalCalls ?? 0} calls"
 				></div>
@@ -157,8 +196,8 @@
 
 		<!-- Finish marker -->
 		<div
-			class="absolute right-0 top-1/2 -translate-y-1/2 font-mono text-xs"
-			style="color: #06d6a040;"
+			class="absolute right-0 top-1/2 -translate-y-1/2 font-mono text-xs transition-all duration-500"
+			style="color: {rocket.isFirstToComplete ? '#06d6a0' : '#06d6a040'}; {rocket.isFirstToComplete ? 'filter: drop-shadow(0 0 6px #06d6a080); transform: translateY(-50%) scale(1.3);' : ''}"
 		>
 			🏁
 		</div>
@@ -227,3 +266,34 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.cascade-dot {
+		animation: cascade-flash 0.8s ease-out both;
+	}
+
+	@keyframes cascade-flash {
+		0% {
+			transform: translateX(-50%) translateY(-50%) scale(1);
+			box-shadow: 0 0 4px #ffd60a40;
+		}
+		20% {
+			transform: translateX(-50%) translateY(-50%) scale(2.2);
+			background: #ffffffcc !important;
+			border-color: #ffffff !important;
+			box-shadow: 0 0 16px #ffd60aee, 0 0 30px #ffd60a80, 0 0 50px #ffd60a40;
+		}
+		50% {
+			transform: translateX(-50%) translateY(-50%) scale(1.5);
+			background: #ffd60a80 !important;
+			border-color: #ffd60a !important;
+			box-shadow: 0 0 10px #ffd60aaa, 0 0 20px #ffd60a50;
+		}
+		100% {
+			transform: translateX(-50%) translateY(-50%) scale(1.3);
+			background: #ffd60a50 !important;
+			border-color: #ffd60a !important;
+			box-shadow: 0 0 8px #ffd60a80, 0 0 16px #ffd60a40;
+		}
+	}
+</style>

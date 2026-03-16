@@ -105,6 +105,8 @@ export function createRocket(strategyType: StrategyType, seed: number): RocketSi
 		repairTimeRemaining: 0,
 		repairShipProgress: 0,
 
+		isFirstToComplete: false,
+
 		currentCallProgress: 0,
 		currentCallDuration: randomCallDuration(strategyType)
 	};
@@ -140,11 +142,23 @@ export function tick(
 	deltaMs: number,
 	simTime: number
 ): RocketSimulation[] {
-	return rockets.map((rocket) => {
-		const updated = tickRocket(rocket, failureConfig, deltaMs, simTime);
-		// Return a shallow copy so Svelte detects the change
-		return { ...updated };
+	// Check if anyone was already completed before this tick
+	const hadCompletedBefore = rockets.some((r) => r.state === 'completed');
+
+	const updated = rockets.map((rocket) => {
+		const result = tickRocket(rocket, failureConfig, deltaMs, simTime);
+		return { ...result };
 	});
+
+	// Mark the first rocket to complete (if none were completed before)
+	if (!hadCompletedBefore) {
+		const firstCompleted = updated.find((r) => r.state === 'completed');
+		if (firstCompleted) {
+			firstCompleted.isFirstToComplete = true;
+		}
+	}
+
+	return updated;
 }
 
 function tickRocket(

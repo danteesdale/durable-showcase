@@ -59,8 +59,8 @@
 	</div>
 
 	<!-- Key Limitation -->
-	<div class="rounded p-2 font-mono text-[11px]" style="background: #e6394610; border: 1px solid #e6394620; color: #e6394699;">
-		No state preservation — if retries exhausted on any single call, all progress is lost. Process crash = start over.
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #f48c0610; border: 1px solid #f48c0630; color: #c8d0dc;">
+		Retries handle transient faults that No Retries can't survive — but there's no state preservation. If retries exhaust or the process crashes, all progress is lost. Both Temporal and Event-Driven preserve state across failures; Standard Retries does not.
 	</div>
 
 	<!-- Event Log -->

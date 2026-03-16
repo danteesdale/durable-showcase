@@ -92,6 +92,11 @@
 		</div>
 	</div>
 
+	<!-- Key Advantage -->
+	<div class="rounded p-2 font-mono text-[11px] leading-relaxed" style="background: #00b4d810; border: 1px solid #00b4d830; color: #c8d0dc;">
+		Durable execution preserves workflow state across any failure — unlike Standard Retries or No Retries, nothing is lost on crash. Infinite retries with exponential backoff mean the workflow always resumes from exactly where it left off. Same durability as Event-Driven, but without the distributed saga complexity.
+	</div>
+
 	<!-- Event Log -->
 	<div class="flex-1 min-h-0">
 		<EventLog events={rocket.eventLog} color={config.color} />

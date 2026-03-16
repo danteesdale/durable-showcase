@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tweened } from 'svelte/motion';
-	import { cubicOut } from 'svelte/easing';
+	import { cubicOut, cubicIn, sineInOut } from 'svelte/easing';
 	import Rocket from './Rocket.svelte';
 	import RocketStatus from './RocketStatus.svelte';
 	import ExhaustTrail from './ExhaustTrail.svelte';
@@ -114,7 +114,7 @@
 
 	// Track effect states
 	const showExplosion = $derived(rocket.state === 'failed');
-	const showSuccess = $derived(rocket.state === 'completed');
+	const showSuccess = $derived(rocket.state === 'completed' && rocket.isFirstToComplete);
 	const repairPhase = $derived(
 		rocket.state === 'repair-approaching' ? 'approaching' as const
 		: rocket.state === 'repair-docked' ? 'docked' as const
@@ -123,10 +123,125 @@
 	);
 	const showRepairShip = $derived(repairPhase !== 'gone');
 	const isStalled = $derived(rocket.state === 'error-queue-stalled');
+
+	// Completion animation — winner swoops to planet center, losers fly off into space
+	let isAnimating = $state(false);
+	let animType = $state<'winner' | 'loser' | null>(null);
+	let swoopPath = $state<{ c1x: number; c1y: number; c2x: number; c2y: number; dx: number; dy: number } | null>(null);
+	const animProgress = tweened(0);
+
+	function cubicBezierVal(t: number, p0: number, p1: number, p2: number, p3: number) {
+		const mt = 1 - t;
+		return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
+	}
+
+	function cubicBezierDeriv(t: number, p0: number, p1: number, p2: number, p3: number) {
+		const mt = 1 - t;
+		return 3 * mt * mt * (p1 - p0) + 6 * mt * t * (p2 - p1) + 3 * t * t * (p3 - p2);
+	}
+
+	function measureTarget() {
+		if (!trackEl) return;
+		const sceneEl = trackEl.closest('[data-scene]') as HTMLElement;
+		if (!sceneEl) return;
+		const sceneRect = sceneEl.getBoundingClientRect();
+		const trackRect = trackEl.getBoundingClientRect();
+
+		const rocketAbsX = trackRect.left + rocketPixelX + 33;
+		const rocketAbsY = trackRect.top + trackRect.height / 2;
+
+		if (rocket.isFirstToComplete) {
+			animType = 'winner';
+			const targetX = sceneRect.left + sceneRect.width / 2;
+			const targetY = sceneRect.bottom - 50;
+			const dx = targetX - rocketAbsX;
+			const dy = targetY - rocketAbsY;
+			swoopPath = {
+				c1x: 250, c1y: -100,    // depart: continue right + arc upward
+				c2x: dx, c2y: -200,     // approach: directly above target (vertical landing)
+				dx, dy
+			};
+		} else {
+			animType = 'loser';
+			swoopPath = {
+				c1x: 150, c1y: -120,
+				c2x: 350, c2y: -350,
+				dx: 400, dy: -500
+			};
+		}
+	}
+
+	function startCompletionAnim() {
+		if (isAnimating) return;
+		isAnimating = true;
+		measureTarget();
+
+		if (animType === 'winner') {
+			animProgress.set(1, { duration: 4000, easing: sineInOut });
+		} else {
+			animProgress.set(1, { duration: 2500, easing: cubicIn });
+		}
+	}
+
+	function resetCompletionAnim() {
+		isAnimating = false;
+		animType = null;
+		swoopPath = null;
+		animProgress.set(0, { duration: 0 });
+	}
+
+	$effect(() => {
+		if (rocket.state === 'completed') {
+			startCompletionAnim();
+		} else if (rocket.state === 'idle') {
+			resetCompletionAnim();
+		}
+	});
+
+	const animX = $derived.by(() => {
+		if ($animProgress === 0 || !swoopPath) return 0;
+		return cubicBezierVal($animProgress, 0, swoopPath.c1x, swoopPath.c2x, swoopPath.dx);
+	});
+
+	const animY = $derived.by(() => {
+		if ($animProgress === 0 || !swoopPath) return 0;
+		return cubicBezierVal($animProgress, 0, swoopPath.c1y, swoopPath.c2y, swoopPath.dy);
+	});
+
+	const animRotation = $derived.by(() => {
+		if ($animProgress === 0 || !swoopPath) return 0;
+		const t = Math.max(0.001, $animProgress);
+		const tdx = cubicBezierDeriv(t, 0, swoopPath.c1x, swoopPath.c2x, swoopPath.dx);
+		const tdy = cubicBezierDeriv(t, 0, swoopPath.c1y, swoopPath.c2y, swoopPath.dy);
+		const tangentAngle = Math.atan2(tdy, tdx) * 180 / Math.PI;
+
+		if (animType === 'winner') {
+			// Flip-and-burn: follow path nose-forward, then flip 180° to land nose-up
+			const flipStart = 0.3;
+			const flipEnd = 0.55;
+			if (t <= flipStart) return tangentAngle;
+			if (t >= flipEnd) return tangentAngle + 180;
+			// Smoothstep blend during the flip
+			const ft = (t - flipStart) / (flipEnd - flipStart);
+			const smooth = ft * ft * (3 - 2 * ft);
+			return tangentAngle + 180 * smooth;
+		}
+
+		return tangentAngle;
+	});
+
+	const animScale = $derived(
+		animType === 'winner' ? 1 - 0.15 * $animProgress : 1 - 0.4 * $animProgress
+	);
+
+	const animOpacity = $derived(
+		animType === 'loser' ? Math.max(0, 1 - $animProgress * 1.3) : 1
+	);
 </script>
 
 <div
 	class="relative flex items-center h-14 w-full cursor-pointer hover:bg-white/[0.02] transition-colors rounded"
+	style="{isAnimating ? 'z-index: 50;' : ''}"
 	onclick={() => selectRocket(rocket.id)}
 	role="button"
 	tabindex="0"
@@ -250,8 +365,16 @@
 
 		<!-- Rocket (positioned along track) -->
 		<div
-			class="absolute top-1/2 -translate-y-1/2 z-20"
-			style="left: calc({$position * 100}% - 30px); transition: none;"
+			class="absolute z-20"
+			style="
+				left: calc({$position * 100}% - 30px);
+				top: 50%;
+				transform: translateY(-50%) translate({animX}px, {animY}px) rotate({animRotation}deg) scale({animScale});
+				opacity: {animOpacity};
+				transform-origin: center center;
+				transition: none;
+				will-change: transform;
+			"
 		>
 			<Rocket
 				strategyType={rocket.id}

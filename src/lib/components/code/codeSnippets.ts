@@ -154,26 +154,6 @@ export async function rocketMission(missionId: string) {
 // Retries, state, timeouts — handled by the platform.`
 			},
 			{
-				filename: 'worker.ts',
-				language: 'typescript',
-				code: `import { Worker, NativeConnection } from '@temporalio/worker';
-import * as activities from './activities';
-
-const connection = await NativeConnection.connect({
-  address: 'temporal:7233',
-});
-
-const worker = await Worker.create({
-  connection,
-  namespace: 'default',
-  taskQueue: 'rocket-missions',
-  workflowsPath: require.resolve('./workflow'),
-  activities,
-});
-
-await worker.run();`
-			},
-			{
 				filename: 'activities.ts',
 				language: 'typescript',
 				code: `// Each activity wraps one operation.
@@ -242,6 +222,26 @@ export async function finalApproach(id: string) {
 export async function confirmCapture(id: string) {
   await dockingPort.confirmCapture(id);
 }`
+			},
+			{
+				filename: 'worker.ts',
+				language: 'typescript',
+				code: `import { Worker, NativeConnection } from '@temporalio/worker';
+import * as activities from './activities';
+
+const connection = await NativeConnection.connect({
+  address: 'temporal:7233',
+});
+
+const worker = await Worker.create({
+  connection,
+  namespace: 'default',
+  taskQueue: 'rocket-missions',
+  workflowsPath: require.resolve('./workflow'),
+  activities,
+});
+
+await worker.run();`
 			}
 		],
 		complexity: 'Medium',

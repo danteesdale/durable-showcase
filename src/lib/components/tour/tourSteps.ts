@@ -17,7 +17,7 @@ export type TourAction =
 	| { type: 'set-infra-down'; value: boolean }
 	| { type: 'launch' }
 	| { type: 'reset' }
-	| { type: 'open-code-panel' }
+	| { type: 'open-code-panel'; strategy?: string }
 	| { type: 'close-code-panel' }
 	/** Toggle infra on/off on a schedule. Each entry is [delayMs, infraDown]. */
 	| { type: 'infra-schedule'; schedule: Array<[number, boolean]> };
@@ -78,7 +78,7 @@ export const tourSteps: TourStep[] = [
 	{
 		title: 'The Failures Stack Up',
 		description:
-			'No Retries explodes on the first failure. Standard Retries burns through its 3 attempts quickly and crashes. Event-Driven has more retries but can still exhaust them — and when it does, messages land in an error queue. Only Temporal keeps going.',
+			'No Retries explodes on the first failure. Standard Retries burns through its 3 attempts quickly and crashes. Event-Driven has more retries but can still exhaust them — and if it does, messages land in an error queue.',
 		highlight: '[data-tour="rocket-lanes"]',
 		position: 'bottom-left',
 		durationMs: 10000
@@ -94,7 +94,7 @@ export const tourSteps: TourStep[] = [
 	{
 		title: 'Infrastructure Goes Down',
 		description:
-			'Infrastructure just went down completely. No Retries and Standard Retries are immediately eliminated. The Event-Driven rocket is burning through its retry budget. Temporal calmly pauses and waits.',
+			'Infrastructure just went down completely. No Retries and Standard Retries are immediately eliminated. The Event-Driven rocket is burning through its retry budget. Temporal pauses and waits.',
 		highlight: '[data-tour="infra-toggle"]',
 		position: 'top',
 		actions: [
@@ -111,7 +111,7 @@ export const tourSteps: TourStep[] = [
 				[8000, false],
 			]},
 		],
-		durationMs: 15000
+		durationMs: 13000
 	},
 	{
 		title: 'Infrastructure Recovers',
@@ -127,7 +127,7 @@ export const tourSteps: TourStep[] = [
 			'Both Temporal and Event-Driven need activity/handler code to do the actual work. The difference? Temporal keeps your orchestration as linear business logic in one file. Event-Driven scatters it across sagas, handlers, message classes, and config — ~300 lines of infrastructure code on top of your business logic.',
 		highlight: null,
 		position: 'center',
-		actions: [{ type: 'open-code-panel' }],
+		actions: [{ type: 'open-code-panel', strategy: 'temporal' }],
 		durationMs: 12000
 	},
 	{

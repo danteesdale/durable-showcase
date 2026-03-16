@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
 import type { StrategyType } from '../simulation/types';
+import { speedMultiplier, reset } from './simulation';
 
 // ============================================================
 // UI State Stores
@@ -49,6 +50,8 @@ export function toggleCodePanel() {
 }
 
 export function startTour() {
+	reset();
+	speedMultiplier.set(1);
 	tourActive.set(true);
 	tourStep.set(0);
 }

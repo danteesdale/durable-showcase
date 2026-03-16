@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tourActive, tourStep, nextTourStep, prevTourStep, endTour } from '$lib/stores/ui';
 	import { launch, reset, updateFailureConfig } from '$lib/stores/simulation';
-	import { toggleCodePanel, codePanelOpen } from '$lib/stores/ui';
+	import { toggleCodePanel, codePanelOpen, selectRocketCode } from '$lib/stores/ui';
 	import { tourSteps } from './tourSteps';
 	import type { TourAction } from './tourSteps';
 
@@ -43,7 +43,11 @@
 					reset();
 					break;
 				case 'open-code-panel':
-					if (!$codePanelOpen) toggleCodePanel();
+					if (action.strategy) {
+						selectRocketCode(action.strategy as any);
+					} else if (!$codePanelOpen) {
+						toggleCodePanel();
+					}
 					break;
 				case 'close-code-panel':
 					if ($codePanelOpen) toggleCodePanel();

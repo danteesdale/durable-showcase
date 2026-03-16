@@ -10,7 +10,7 @@
 	import type { RocketSimulation } from '$lib/simulation/types';
 	import { ROCKET_CONFIG } from '$lib/constants';
 	import { MISSION } from '$lib/simulation/missionStages';
-	import { selectRocket } from '$lib/stores/ui';
+	import { selectRocket, selectRocketCode } from '$lib/stores/ui';
 
 	interface Props {
 		rocket: RocketSimulation;
@@ -46,7 +46,7 @@
 	});
 
 	// Compute nozzle position (left edge of rocket SVG = nozzle area)
-	const rocketPixelX = $derived($position * (trackWidth - 32)); // subtract right margin
+	const rocketPixelX = $derived($position * (trackWidth - 42)); // subtract right margin for 82px rocket
 	const nozzleX = $derived(rocketPixelX); // nozzle is at the left of the rocket
 	const nozzleY = $derived(trackHeight / 2);
 
@@ -112,6 +112,36 @@
 		}
 	});
 
+	// Track stage completions for subtle green cascade
+	let completedStages = $state<Set<number>>(new Set());
+	let animatingStages = $state<Set<number>>(new Set());
+
+	function isStageComplete(stageIdx: number): boolean {
+		const stageResults = rocket.stageResults[stageIdx];
+		if (!stageResults || stageResults.length === 0) return false;
+		return stageResults.every(g => g.status === 'success');
+	}
+
+	$effect(() => {
+		const boundaries = stageBoundaries();
+		for (let s = 0; s < boundaries.length; s++) {
+			if (isStageComplete(s) && !completedStages.has(s)) {
+				completedStages = new Set([...completedStages, s]);
+				animatingStages = new Set([...animatingStages, s]);
+				// Remove animating state after animation completes
+				const maxDots = boundaries[s].groups;
+				const animDuration = maxDots * 50 + 600; // stagger + animation time
+				setTimeout(() => {
+					animatingStages = new Set([...animatingStages].filter(x => x !== s));
+				}, animDuration);
+			}
+		}
+		if (rocket.state === 'idle') {
+			completedStages = new Set();
+			animatingStages = new Set();
+		}
+	});
+
 	// Track effect states
 	const showExplosion = $derived(rocket.state === 'failed');
 	const showSuccess = $derived(rocket.state === 'completed' && rocket.isFirstToComplete);
@@ -147,7 +177,7 @@
 		const sceneRect = sceneEl.getBoundingClientRect();
 		const trackRect = trackEl.getBoundingClientRect();
 
-		const rocketAbsX = trackRect.left + rocketPixelX + 33;
+		const rocketAbsX = trackRect.left + rocketPixelX + 41;
 		const rocketAbsY = trackRect.top + trackRect.height / 2;
 
 		if (rocket.isFirstToComplete) {
@@ -237,15 +267,62 @@
 	const animOpacity = $derived(
 		animType === 'loser' ? Math.max(0, 1 - $animProgress * 1.3) : 1
 	);
+
+	// Context menu state
+	let menuOpen = $state(false);
+	let menuX = $state(0);
+	let menuY = $state(0);
+
+	const MENU_WIDTH = 140;
+	const MENU_HEIGHT = 80;
+
+	function handleLaneClick(e: MouseEvent) {
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		let x = e.clientX - rect.left;
+		let y = e.clientY - rect.top;
+		// Clamp so the menu stays within the lane bounds
+		if (x + MENU_WIDTH > rect.width) x = rect.width - MENU_WIDTH;
+		if (y + MENU_HEIGHT > rect.height) y = y - MENU_HEIGHT;
+		if (x < 0) x = 0;
+		if (y < 0) y = 0;
+		menuX = x;
+		menuY = y;
+		menuOpen = true;
+	}
+
+	function handleViewInternals() {
+		menuOpen = false;
+		selectRocket(rocket.id);
+	}
+
+	function handleViewCode() {
+		menuOpen = false;
+		selectRocketCode(rocket.id);
+	}
+
+	// Close menu on outside click
+	$effect(() => {
+		if (menuOpen) {
+			const handler = () => { menuOpen = false; };
+			// Delay to avoid the opening click closing it immediately
+			const timer = setTimeout(() => {
+				window.addEventListener('click', handler, { once: true });
+			}, 0);
+			return () => {
+				clearTimeout(timer);
+				window.removeEventListener('click', handler);
+			};
+		}
+	});
 </script>
 
 <div
 	class="relative flex items-center h-14 w-full cursor-pointer hover:bg-white/[0.02] transition-colors rounded"
 	style="{isAnimating ? 'z-index: 50;' : ''}"
-	onclick={() => selectRocket(rocket.id)}
+	onclick={handleLaneClick}
 	role="button"
 	tabindex="0"
-	onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') selectRocket(rocket.id); }}
+	onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleLaneClick(e as unknown as MouseEvent); }}
 >
 	<!-- Status label (left side) -->
 	<div class="shrink-0 w-[190px] pr-3">
@@ -292,8 +369,10 @@
 				{@const status = getGroupStatus(stageIdx, groupIdx)}
 				{@const flatIdx = dotFlatIndex().indices[stageIdx]?.[groupIdx] ?? 0}
 				{@const sweepDelay = flatIdx * 60}
+				{@const stageJustCompleted = animatingStages.has(stageIdx)}
+				{@const stageSweepDelay = groupIdx * 50}
 				<div
-					class="absolute top-1/2 -translate-y-1/2 rounded-full border transition-all duration-200 {cascadeActive ? 'cascade-dot' : ''}"
+					class="absolute top-1/2 -translate-y-1/2 rounded-full border transition-all duration-200 {cascadeActive ? 'cascade-dot' : ''} {stageJustCompleted && !cascadeActive ? 'stage-complete-dot' : ''}"
 					style="
 						left: {dotLeft}%;
 						transform: translateX(-50%) translateY(-50%);
@@ -302,7 +381,8 @@
 						background: {cascadeActive ? '#ffd60a50' : status === 'pending' ? 'transparent' : clusterColor(status) + '30'};
 						border-color: {cascadeActive ? '#ffd60a' : clusterColor(status)};
 						{cascadeActive ? `box-shadow: 0 0 8px #ffd60a80, 0 0 16px #ffd60a40; animation-delay: ${sweepDelay}ms;` : ''}
-						{!cascadeActive && status === 'in-progress' ? 'box-shadow: 0 0 6px ' + clusterColor(status) + '80; animation: pulse 1.5s ease-in-out infinite;' : ''}
+						{stageJustCompleted && !cascadeActive ? `animation-delay: ${stageSweepDelay}ms;` : ''}
+						{!cascadeActive && !stageJustCompleted && status === 'in-progress' ? 'box-shadow: 0 0 6px ' + clusterColor(status) + '80; animation: pulse 1.5s ease-in-out infinite;' : ''}
 					"
 					title="{rocket.stageResults[stageIdx]?.[groupIdx]?.groupName ?? ''}: {rocket.stageResults[stageIdx]?.[groupIdx]?.completedCalls ?? 0}/{rocket.stageResults[stageIdx]?.[groupIdx]?.totalCalls ?? 0} calls"
 				></div>
@@ -329,7 +409,7 @@
 		{#if showExplosion}
 			<Explosion
 				strategyType={rocket.id}
-				x={rocketPixelX + 33}
+				x={rocketPixelX + 41}
 				y={nozzleY}
 			/>
 		{/if}
@@ -338,7 +418,7 @@
 		{#if showSuccess}
 			<SuccessEffect
 				strategyType={rocket.id}
-				x={rocketPixelX + 33}
+				x={rocketPixelX + 41}
 				y={nozzleY}
 			/>
 		{/if}
@@ -357,7 +437,7 @@
 		{#if isStalled}
 			<div
 				class="absolute z-30 font-mono text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap animate-pulse"
-				style="left: {rocketPixelX + 70}px; top: {nozzleY - 20}px; background: #e6394625; color: #e63946;"
+				style="left: {rocketPixelX + 86}px; top: {nozzleY - 20}px; background: #e6394625; color: #e63946;"
 			>
 				⚠ Error Queue — Awaiting Manual Intervention...
 			</div>
@@ -367,7 +447,7 @@
 		<div
 			class="absolute z-20"
 			style="
-				left: calc({$position * 100}% - 30px);
+				left: calc({$position * 100}% - 38px);
 				top: 50%;
 				transform: translateY(-50%) translate({animX}px, {animY}px) rotate({animRotation}deg) scale({animScale});
 				opacity: {animOpacity};
@@ -388,11 +468,80 @@
 			/>
 		</div>
 	</div>
+
+	<!-- Context Menu -->
+	{#if menuOpen}
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div
+			class="absolute z-50 rounded-lg overflow-hidden shadow-xl context-menu-appear"
+			style="
+				left: {menuX}px;
+				top: {menuY}px;
+				background: #1a1e2e;
+				border: 1px solid {config.color}30;
+				box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 12px {config.color}15;
+			"
+			onclick={(e) => e.stopPropagation()}
+			role="menu"
+		>
+			<button
+				class="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-[12px] text-left transition-colors hover:bg-white/[0.06]"
+				style="color: {config.color};"
+				onclick={handleViewCode}
+				role="menuitem"
+			>
+				<span class="text-sm opacity-70">&#x2630;</span>
+				<span>Code</span>
+			</button>
+			<div style="height: 1px; background: {config.color}15;"></div>
+			<button
+				class="flex items-center gap-2 w-full px-4 py-2.5 font-mono text-[12px] text-left transition-colors hover:bg-white/[0.06]"
+				style="color: {config.color};"
+				onclick={handleViewInternals}
+				role="menuitem"
+			>
+				<span class="text-sm opacity-70">&#x2699;</span>
+				<span>Internals</span>
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style>
+	.context-menu-appear {
+		animation: menu-pop 0.15s ease-out;
+	}
+
+	@keyframes menu-pop {
+		from { opacity: 0; transform: scale(0.9); }
+		to { opacity: 1; transform: scale(1); }
+	}
+
 	.cascade-dot {
 		animation: cascade-flash 0.8s ease-out both;
+	}
+
+	.stage-complete-dot {
+		animation: stage-complete-ripple 0.6s ease-out both;
+	}
+
+	@keyframes stage-complete-ripple {
+		0% {
+			transform: translateX(-50%) translateY(-50%) scale(1);
+		}
+		30% {
+			transform: translateX(-50%) translateY(-50%) scale(1.6);
+			background: #06d6a060 !important;
+			border-color: #06d6a0 !important;
+			box-shadow: 0 0 8px #06d6a070, 0 0 14px #06d6a030;
+		}
+		100% {
+			transform: translateX(-50%) translateY(-50%) scale(1);
+			background: #06d6a030 !important;
+			border-color: #06d6a0 !important;
+			box-shadow: none;
+		}
 	}
 
 	@keyframes cascade-flash {

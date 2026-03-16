@@ -1,5 +1,5 @@
 import { writable, get } from 'svelte/store';
-import { updateFailureConfig, isRunning, failureConfig } from './simulation';
+import { updateFailureConfig, isRunning, failureConfig, speedMultiplier } from './simulation';
 import { DEFAULT_FAILURE_CONFIG } from '$lib/constants';
 
 // ============================================================
@@ -73,12 +73,12 @@ const incidents: Incident[] = [
 			let label: string;
 			let duration: number;
 
-			if (severity < 0.5) {
+			if (severity < 0.65) {
 				// Full kill — 0% availability, long outage
 				target = 0;
 				label = 'Service instance terminated';
 				duration = FULL_KILL_MIN + Math.random() * (FULL_KILL_MAX - FULL_KILL_MIN);
-			} else if (severity < 0.8) {
+			} else if (severity < 0.85) {
 				// Severe degradation — very low availability, still long
 				target = Math.floor(Math.random() * 15); // 0-14%
 				label = `Service degraded → ${target}%`;
@@ -133,7 +133,7 @@ const incidents: Incident[] = [
 	},
 	{
 		name: 'infra-outage',
-		weight: 1,
+		weight: 2,
 		execute: () => {
 			// Total infrastructure kill — the big one, stays down a long time
 			updateFailureConfig({ infrastructureDown: true });
@@ -149,7 +149,7 @@ const incidents: Incident[] = [
 	},
 	{
 		name: 'compound-failure',
-		weight: 1,
+		weight: 2,
 		execute: () => {
 			const avail = Math.floor(Math.random() * 20); // 0-19%
 			const network = 40 + Math.floor(Math.random() * 40); // 40-79%
@@ -190,14 +190,17 @@ function pickIncident(): Incident {
  * Modeled after Netflix Chaos Monkey:
  * 1. Normal operation for 5-10 seconds (services running fine)
  * 2. Incident strikes — one thing killed completely
- * 3. Disruption held long enough to exhaust EDA retries (14-22s for full kills)
+ * 3. Disruption held for a period of time to bring down typical retry backoffs.
  * 4. Auto-restore, back to step 1
  */
 function scheduleCycle() {
 	if (!get(isRunning) || get(controlMode) !== 'chaos') return;
 
+	// Scale timings inversely with speed — at 5x, chaos acts 5x faster
+	const speed = get(speedMultiplier);
+
 	// Calm period — everything works, rockets make progress
-	const calmDuration = 5000 + Math.random() * 5000; // 5-10s
+	const calmDuration = (5000 + Math.random() * 5000) / speed; // 5-10s at 1x
 
 	chaosTimeout = setTimeout(() => {
 		if (!get(isRunning) || get(controlMode) !== 'chaos') return;
@@ -206,14 +209,14 @@ function scheduleCycle() {
 		const incident = pickIncident();
 		const { restore, durationMs } = incident.execute();
 
-		// Hold the disruption for the incident-specific duration
+		// Hold the disruption for the incident-specific duration, scaled by speed
 		activeDisruption = setTimeout(() => {
 			if (get(controlMode) === 'chaos') {
 				restore();
 			}
 			// Schedule next cycle
 			scheduleCycle();
-		}, durationMs);
+		}, durationMs / speed);
 	}, calmDuration);
 }
 

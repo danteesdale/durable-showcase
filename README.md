@@ -1,42 +1,36 @@
-# sv
+# Durable Showcase
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Simple comparison app that visually displays the differences in distributed systems architecture implementations when introducing failure, specifically focused on the advantages of durable execution.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Four rockets representing different architecture strategies attempt to complete a 6 phase mission without exploding
+- Injectable failures: service availability, network errors, rate limiting, infrastructure outages, etc.
+- Chaos Space Monkey for automated chaos in space.
 
-```sh
-# create a new project
-npx sv create my-app
-```
+## Strategies Compared
 
-To recreate this project with the same configuration:
+| Strategy | Description |
+|----------|-------------|
+| **No Retries** | A naive implementation when dealing with distributed systems |
+| **Standard Retries (Polly)** | Basic retry policies |
+| **Event-Driven (Saga)** | Event driven with DLQ |
+| **Temporal (Durable Execution)** | Full durability with Temporal |
 
-```sh
-# recreate this project
-npx sv@0.12.7 create --template minimal --types ts --no-install .
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Getting Started
 
 ```sh
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Live Demo
 
-To create a production version of your app:
+https://danteesdale.github.io/durable-showcase
 
-```sh
-npm run build
-```
+## Built With
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- [SvelteKit](https://svelte.dev) + [Svelte 5](https://svelte.dev/docs/svelte/overview)
+- [TypeScript](https://www.typescriptlang.org)
+- [Tailwind CSS](https://tailwindcss.com)
+- [Shiki](https://shiki.style) for syntax highlighting

@@ -43,23 +43,6 @@
 		</div>
 	</div>
 
-	<!-- Preserved State -->
-	{#if Object.keys(rocket.preservedState).length > 0}
-		<div class="flex flex-col gap-1">
-			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">Preserved State</span>
-			<div class="font-mono text-[11px] rounded p-2" style="background: #0a0e1a80; border: 1px solid {config.color}20;">
-				<span style="color: {config.color};">{`{`}</span>
-				{#each Object.entries(rocket.preservedState) as [key, value]}
-					<div class="pl-3">
-						<span class="text-text-muted">{key}:</span>
-						<span class="text-text-secondary">{JSON.stringify(value)}</span>
-					</div>
-				{/each}
-				<span style="color: {config.color};">{`}`}</span>
-			</div>
-		</div>
-	{/if}
-
 	<!-- Workflow History (Temporal Web UI style) -->
 	<div class="flex flex-col gap-1 flex-1 min-h-0">
 		<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">

@@ -132,7 +132,7 @@
 			{/if}
 
 			<!-- Code Block -->
-			<div class="mx-4 rounded-lg overflow-hidden flex-1 min-h-0" style="border: 1px solid {config.color}20; {snippet.files.length > 1 ? 'border-top-left-radius: 0;' : ''}">
+			<div class="mx-4 rounded-lg overflow-hidden flex-1 min-h-0 flex flex-col" style="border: 1px solid {config.color}20; {snippet.files.length > 1 ? 'border-top-left-radius: 0;' : ''}">
 				{#if snippet.files.length === 1}
 					<!-- Single file: show filename as title bar -->
 					<div
@@ -142,7 +142,7 @@
 						{currentFile.filename}
 					</div>
 				{/if}
-				<div class="overflow-auto h-full shiki-container">
+				<div class="overflow-auto flex-1 min-h-0 shiki-container">
 					{#if highlightedHtml}
 						{@html highlightedHtml}
 					{:else}

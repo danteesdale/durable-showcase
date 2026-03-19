@@ -44,28 +44,51 @@
 	});
 </script>
 
-<div class="flex items-center gap-2 min-w-[180px]">
-	<!-- Strategy name with tooltip -->
-	<span
-		class="font-display text-sm font-semibold cursor-help"
-		style="color: {config.color};"
-		title="{config.description}&#10;&#10;Good for: {config.goodFor}"
-	>
-		{config.label}
-	</span>
+<div class="flex items-center md:items-start gap-1.5 md:gap-2 min-w-0">
+	<!-- Colored dot (mobile only) -->
+	<span class="block md:hidden w-2 h-2 rounded-full shrink-0 mt-0.5" style="background: {config.color};"></span>
 
-	<!-- State badge -->
-	<span
-		class="font-mono text-[10px] px-1.5 py-0.5 rounded-full"
-		style="background: {stateColor()}20; color: {stateColor()};"
-	>
-		{stateLabel()}
-	</span>
-
-	<!-- Call counter -->
-	{#if state !== 'idle'}
-		<span class="font-mono text-[10px] text-text-muted">
-			{completedCalls}/{totalCalls}
+	<!-- Strategy name + state badge stacked on desktop -->
+	<div class="flex flex-col gap-0.5 min-w-0">
+		<!-- Strategy name with custom tooltip -->
+		<span class="relative group/tooltip inline-block">
+			<span
+				class="font-display text-xs md:text-sm font-semibold cursor-help"
+				style="color: {config.color};"
+			>
+				{config.label}
+			</span>
+			<div
+				class="absolute top-full left-0 mt-2 z-50 pointer-events-none w-56
+				       opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-150
+				       p-3 rounded-lg border"
+				style="
+					background: #1a1e2e;
+					border-color: {config.color}30;
+					box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 10px {config.color}15;
+				"
+			>
+				<p class="font-mono leading-relaxed mb-2" style="color: #94a3b8; font-size: 10px;">{config.description}</p>
+				<p class="font-mono" style="color: {config.color}; font-size: 10px;">Good for: <span style="color: #64748b;">{config.goodFor}</span></p>
+			</div>
 		</span>
-	{/if}
+
+		<!-- State badge + call counter row -->
+		<div class="flex items-center gap-1.5">
+			<!-- State badge (hidden on mobile for compactness) -->
+			<span
+				class="hidden md:inline font-mono text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap"
+				style="background: {stateColor()}20; color: {stateColor()};"
+			>
+				{stateLabel()}
+			</span>
+
+			<!-- Call counter -->
+			{#if state !== 'idle'}
+				<span class="font-mono text-[10px] text-text-muted shrink-0">
+					{completedCalls}/{totalCalls}
+				</span>
+			{/if}
+		</div>
+	</div>
 </div>

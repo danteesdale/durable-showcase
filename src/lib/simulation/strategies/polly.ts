@@ -4,8 +4,8 @@ import { TIMING } from '../../constants';
 /**
  * Polly / Standard Retry Strategy
  *
- * - Max 5 retries with exponential backoff (1s × 2^n) + ±20% jitter
- * - Circuit breaker after 3 consecutive failures (opens for 10s)
+ * - Max 3 retries with exponential backoff (300ms × 2.5^n) + ±20% jitter
+ * - Circuit breaker after 2 consecutive failures (opens for 10s)
  * - No durable state preservation — if process crashes, progress is lost
  * - Individual call retry (prior calls in stage remembered, but no cross-stage durability)
  */

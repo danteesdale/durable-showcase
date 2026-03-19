@@ -18,31 +18,36 @@ export const codeSnippets: Record<StrategyType, CodeSnippet> = {
 		title: 'No Error Handling',
 		files: [
 			{
-				filename: 'mission.ts',
-				language: 'typescript',
-				code: `export async function rocketMission(missionId: string) {
-  const engine = await engineService.start(missionId);
-  await fuelSystem.pressurize(engine.id);
-  await safety.verifyAllClear(missionId);
+				filename: 'Mission.cs',
+				language: 'csharp',
+				code: `public class RocketMission
+{
+    public async Task Execute(string missionId)
+    {
+        var engine = await _engineService
+            .Start(missionId);
+        await _fuelSystem.Pressurize(engine.Id);
+        await _safety.VerifyAllClear(missionId);
 
-  await launchControl.authorize(missionId);
-  await tower.retractArm(missionId);
-  await propulsion.mainEngineStart(engine.id);
-  await telemetry.initDownlink(missionId);
+        await _launchControl.Authorize(missionId);
+        await _tower.RetractArm(missionId);
+        await _propulsion.MainEngineStart(engine.Id);
+        await _telemetry.InitDownlink(missionId);
 
-  await guidance.activateFCS(missionId);
-  await aerodynamics.monitorHeatShield(missionId);
-  await comms.activateSBand(missionId);
+        await _guidance.ActivateFCS(missionId);
+        await _aerodynamics.MonitorHeatShield(missionId);
+        await _comms.ActivateSBand(missionId);
 
-  await navigation.calculateBurn(missionId);
-  await propulsion.executeManeuver(missionId);
+        await _navigation.CalculateBurn(missionId);
+        await _propulsion.ExecuteManeuver(missionId);
 
-  await orbital.calculateInsertion(missionId);
-  await rcs.enableStationKeeping(missionId);
+        await _orbital.CalculateInsertion(missionId);
+        await _rcs.EnableStationKeeping(missionId);
 
-  await dockingPort.extendMechanism(missionId);
-  await rcs.finalApproach(missionId);
-  await dockingPort.confirmCapture(missionId);
+        await _dockingPort.ExtendMechanism(missionId);
+        await _rcs.FinalApproach(missionId);
+        await _dockingPort.ConfirmCapture(missionId);
+    }
 }
 
 // Simple. Linear. Easy to read.
@@ -58,194 +63,285 @@ export const codeSnippets: Record<StrategyType, CodeSnippet> = {
 		title: 'Standard Retry Pattern',
 		files: [
 			{
-				filename: 'mission.ts',
-				language: 'typescript',
-				code: `import { retry, exponentialBackoff } from './resilience';
+				filename: 'Mission.cs',
+				language: 'csharp',
+				code: `public class RocketMission(ResiliencePipeline policy)
+{
+    public async Task Execute(string missionId)
+    {
+        var engine = await policy.ExecuteAsync(
+            async ct => await _engineService.Start(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _fuelSystem.Pressurize(engine.Id, ct));
+        await policy.ExecuteAsync(
+            async ct => await _safety.VerifyAllClear(missionId, ct));
 
-const policy = retry({
-  maxAttempts: 3,
-  backoff: exponentialBackoff({
-    initial: 300, factor: 2.5, jitter: 0.2
-  })
-});
+        await policy.ExecuteAsync(
+            async ct => await _launchControl.Authorize(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _tower.RetractArm(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _propulsion.MainEngineStart(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _telemetry.InitDownlink(missionId, ct));
 
-export async function rocketMission(missionId: string) {
-  const engine = await policy.execute(
-    () => engineService.start(missionId));
-  await policy.execute(
-    () => fuelSystem.pressurize(engine.id));
-  await policy.execute(
-    () => safety.verifyAllClear(missionId));
+        await policy.ExecuteAsync(
+            async ct => await _guidance.ActivateFCS(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _aerodynamics.MonitorHeatShield(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _comms.ActivateSBand(missionId, ct));
 
-  await policy.execute(
-    () => launchControl.authorize(missionId));
-  await policy.execute(
-    () => tower.retractArm(missionId));
-  // ... every call wrapped in policy.execute()
+        await policy.ExecuteAsync(
+            async ct => await _navigation.CalculateBurn(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _propulsion.ExecuteManeuver(missionId, ct));
 
-  await policy.execute(
-    () => dockingPort.confirmCapture(missionId));
+        await policy.ExecuteAsync(
+            async ct => await _orbital.CalculateInsertion(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _rcs.EnableStationKeeping(missionId, ct));
+
+        await policy.ExecuteAsync(
+            async ct => await _dockingPort.ExtendMechanism(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _rcs.FinalApproach(missionId, ct));
+        await policy.ExecuteAsync(
+            async ct => await _dockingPort.ConfirmCapture(missionId, ct));
+    }
 }
 
 // Still linear and readable, but:
 // - If retries exhaust? Total failure, start over.
 // - If the process crashes between calls?
 //   All progress lost. No state preservation.
-// - If ignition() succeeded but we crash before
+// - If Start() succeeded but we crash before
 //   recording it? Duplicate side effects on restart.`
+			},
+			{
+				filename: 'ResiliencePolicy.cs',
+				language: 'csharp',
+				code: `using Polly;
+using Polly.Retry;
+
+public static ResiliencePipeline Build() =>
+    new ResiliencePipelineBuilder()
+        .AddRetry(new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            BackoffType = DelayBackoffType.Exponential,
+            Delay = TimeSpan.FromMilliseconds(300),
+            UseJitter = true, // DecorrelatedJitterBackoffV2
+            OnRetry = args =>
+            {
+                Console.WriteLine(
+                    $"Retry {args.AttemptNumber}" +
+                    $" after {args.RetryDelay}");
+                return ValueTask.CompletedTask;
+            }
+        })
+        .Build();`
+			},
+			{
+				filename: 'Worker.cs',
+				language: 'csharp',
+				code: `
+var policy = ResiliencePolicy.Build();
+var mission = new RocketMission(policy);
+var missionId = Environment
+    .GetEnvironmentVariable("MISSION_ID")!;
+
+try
+{
+    await mission.Execute(missionId);
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine(
+        $"Mission failed — no recovery possible: " +
+        $"{ex.Message}");
+    Environment.Exit(1);
+}`
 			}
 		],
 		complexity: 'Low',
-		summary: 'Adds retry wrappers around the same linear flow. Handles transient blips well — but unlike Temporal, there\'s no state preservation. If retries exhaust or the process crashes, all progress is lost. No way to resume from where you left off.'
+		summary: 'Adds retry wrappers around the same linear flow using Polly v8. Handles transient blips well — but unlike Temporal, there\'s no state preservation. If retries exhaust or the process crashes, all progress is lost. No way to resume from where you left off.'
 	},
 
 	temporal: {
 		title: 'Temporal Durable Execution',
 		files: [
 			{
-				filename: 'workflow.ts',
-				language: 'typescript',
-				code: `import { proxyActivities } from '@temporalio/workflow';
-import type * as activities from './activities';
+				filename: 'Workflow.cs',
+				language: 'csharp',
+				code: `using Temporalio.Workflows;
 
-const act = proxyActivities<typeof activities>({
-  startToCloseTimeout: '30s',
-  retry: {
-    initialInterval: '1s',
-    backoffCoefficient: 2,
-    maximumAttempts: Infinity,
-    maximumInterval: '30s',
-  },
-});
+[Workflow]
+public class RocketMission
+{
+    [WorkflowRun]
+    public async Task RunAsync(string missionId)
+    {
+        var opt = new ActivityOptions
+        {
+            StartToCloseTimeout =
+                TimeSpan.FromSeconds(30),
+            RetryPolicy = new()
+            {
+                InitialInterval =
+                    TimeSpan.FromMilliseconds(150), // demo-tuned; real default is 1s
+                BackoffCoefficient = 2,
+                MaximumAttempts = 0,                // unlimited retries
+                MaximumInterval =
+                    TimeSpan.FromSeconds(5),        // demo-tuned; real default is 100s
+            }
+        };
 
-export async function rocketMission(missionId: string) {
-  // Ignition
-  const engine = await act.startEngine(missionId);
-  await act.pressurizeFuel(engine.id);
-  await act.verifyAllClear(missionId);
+        // Ignition
+        var engine = await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.StartEngineAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.PressurizeFuelAsync(engine.Id), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.VerifyAllClearAsync(missionId), opt);
 
-  // Launch
-  await act.authorizeLaunch(missionId);
-  await act.retractArm(missionId);
-  await act.mainEngineStart(missionId);
-  await act.initDownlink(missionId);
+        // Launch
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.AuthorizeLaunchAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.RetractArmAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.MainEngineStartAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.InitDownlinkAsync(missionId), opt);
 
-  // Atmospheric Exit
-  await act.activateFCS(missionId);
-  await act.monitorHeatShield(missionId);
-  await act.activateSBand(missionId);
+        // Atmospheric Exit
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.ActivateFCSAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.MonitorHeatShieldAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.ActivateSBandAsync(missionId), opt);
 
-  // Deep Space Navigation
-  await act.calculateBurn(missionId);
-  await act.executeManeuver(missionId);
+        // Deep Space Navigation
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.CalculateBurnAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.ExecuteManeuverAsync(missionId), opt);
 
-  // Orbital Insertion
-  await act.calculateInsertion(missionId);
-  await act.enableStationKeeping(missionId);
+        // Orbital Insertion
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.CalculateInsertionAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.EnableStationKeepingAsync(missionId), opt);
 
-  // Docking
-  await act.extendMechanism(missionId);
-  await act.finalApproach(missionId);
-  await act.confirmCapture(missionId);
+        // Docking
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.ExtendMechanismAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.FinalApproachAsync(missionId), opt);
+        await Workflow.ExecuteActivityAsync(
+            (RocketActivities a) => a.ConfirmCaptureAsync(missionId), opt);
+    }
 }
 
 // Each activity is one operation — the unit of retry.
-// If monitorHeatShield() fails, only that call retries.
+// If MonitorHeatShield() fails, only that call retries.
 // Retries, state, timeouts — handled by the platform.`
 			},
 			{
-				filename: 'activities.ts',
-				language: 'typescript',
-				code: `// Each activity wraps one operation.
-// Plain async functions — no orchestration logic,
-// no message routing, no saga state.
+				filename: 'Activities.cs',
+				language: 'csharp',
+				code: `using Temporalio.Activities;
 
-// Ignition
-export async function startEngine(id: string) {
-  return await engineService.start(id);
-}
-export async function pressurizeFuel(engineId: string) {
-  await fuelSystem.pressurize(engineId);
-}
-export async function verifyAllClear(id: string) {
-  await safety.verifyAllClear(id);
-}
+// Each activity wraps one operation for idempotency.
 
-// Launch
-export async function authorizeLaunch(id: string) {
-  await launchControl.authorize(id);
-}
-export async function retractArm(id: string) {
-  await tower.retractArm(id);
-}
-export async function mainEngineStart(id: string) {
-  await propulsion.mainEngineStart(id);
-}
-export async function initDownlink(id: string) {
-  await telemetry.initDownlink(id);
-}
+public class RocketActivities
+{
+    // Ignition
+    [Activity]
+    public Task<Engine> StartEngineAsync(string id) =>
+        _engineService.Start(id);
+    [Activity]
+    public Task PressurizeFuelAsync(string engineId) =>
+        _fuelSystem.Pressurize(engineId);
+    [Activity]
+    public Task VerifyAllClearAsync(string id) =>
+        _safety.VerifyAllClear(id);
 
-// Atmospheric Exit
-export async function activateFCS(id: string) {
-  await guidance.activateFCS(id);
-}
-export async function monitorHeatShield(id: string) {
-  await aerodynamics.monitorHeatShield(id);
-}
-export async function activateSBand(id: string) {
-  await comms.activateSBand(id);
-}
+    // Launch
+    [Activity]
+    public Task AuthorizeLaunchAsync(string id) =>
+        _launchControl.Authorize(id);
+    [Activity]
+    public Task RetractArmAsync(string id) =>
+        _tower.RetractArm(id);
+    [Activity]
+    public Task MainEngineStartAsync(string id) =>
+        _propulsion.MainEngineStart(id);
+    [Activity]
+    public Task InitDownlinkAsync(string id) =>
+        _telemetry.InitDownlink(id);
 
-// Deep Space Navigation
-export async function calculateBurn(id: string) {
-  await navigation.calculateBurn(id);
-}
-export async function executeManeuver(id: string) {
-  await propulsion.executeManeuver(id);
-}
+    // Atmospheric Exit
+    [Activity]
+    public Task ActivateFCSAsync(string id) =>
+        _guidance.ActivateFCS(id);
+    [Activity]
+    public Task MonitorHeatShieldAsync(string id) =>
+        _aerodynamics.MonitorHeatShield(id);
+    [Activity]
+    public Task ActivateSBandAsync(string id) =>
+        _comms.ActivateSBand(id);
 
-// Orbital Insertion
-export async function calculateInsertion(id: string) {
-  await orbital.calculateInsertion(id);
-}
-export async function enableStationKeeping(id: string) {
-  await rcs.enableStationKeeping(id);
-}
+    // Deep Space Navigation
+    [Activity]
+    public Task CalculateBurnAsync(string id) =>
+        _navigation.CalculateBurn(id);
+    [Activity]
+    public Task ExecuteManeuverAsync(string id) =>
+        _propulsion.ExecuteManeuver(id);
 
-// Docking
-export async function extendMechanism(id: string) {
-  await dockingPort.extendMechanism(id);
-}
-export async function finalApproach(id: string) {
-  await rcs.finalApproach(id);
-}
-export async function confirmCapture(id: string) {
-  await dockingPort.confirmCapture(id);
+    // Orbital Insertion
+    [Activity]
+    public Task CalculateInsertionAsync(string id) =>
+        _orbital.CalculateInsertion(id);
+    [Activity]
+    public Task EnableStationKeepingAsync(string id) =>
+        _rcs.EnableStationKeeping(id);
+
+    // Docking
+    [Activity]
+    public Task ExtendMechanismAsync(string id) =>
+        _dockingPort.ExtendMechanism(id);
+    [Activity]
+    public Task FinalApproachAsync(string id) =>
+        _rcs.FinalApproach(id);
+    [Activity]
+    public Task ConfirmCaptureAsync(string id) =>
+        _dockingPort.ConfirmCapture(id);
 }`
 			},
 			{
-				filename: 'worker.ts',
-				language: 'typescript',
-				code: `import { Worker, NativeConnection } from '@temporalio/worker';
-import * as activities from './activities';
+				filename: 'Worker.cs',
+				language: 'csharp',
+				code: `using Temporalio.Client;
+using Temporalio.Worker;
 
-const connection = await NativeConnection.connect({
-  address: 'temporal:7233',
-});
+var client = await TemporalClient.ConnectAsync(
+    new("temporal:7233"));
 
-const worker = await Worker.create({
-  connection,
-  namespace: 'default',
-  taskQueue: 'rocket-missions',
-  workflowsPath: require.resolve('./workflow'),
-  activities,
-});
+using var worker = new TemporalWorker(
+    client,
+    new TemporalWorkerOptions("rocket-missions")
+        .AddWorkflow<RocketMission>()
+        .AddAllActivities(new RocketActivities()));
 
-await worker.run();`
+await worker.ExecuteAsync();`
 			}
 		],
 		complexity: 'Medium',
-		summary: 'The workflow reads like the no-retry version — but with full durability. Activities make the same API calls as EDA handlers, but without message routing or saga state. The orchestration stays in one file instead of being scattered across 20+. The tradeoff: you need a Temporal cluster running.'
+		summary: 'The workflow reads like the no-retry version — but with full durability. Activities make the same service calls as EDA handlers, but without message routing or saga state. The orchestration stays in one file instead of being scattered across codebase in message handlers. The tradeoff: you need a Temporal cluster running or Temporal Cloud.'
 	},
 
 	eda: {
@@ -256,7 +352,7 @@ await worker.run();`
 				language: 'csharp',
 				code: `public class RocketJourneySaga :
     Saga<RocketJourneyData>,
-    IAmStartedBy<StartMission>,
+    IAmStartedByMessages<StartMission>,
     IHandleMessages<IgnitionCompleted>,
     IHandleMessages<LaunchCompleted>,
     IHandleMessages<AtmoExitCompleted>,
@@ -509,11 +605,12 @@ public class DockingCompleted {
 				code: `var endpointConfig =
     new EndpointConfiguration("RocketWorker");
 
-var transport = endpointConfig
-    .UseTransport<RabbitMQTransport>();
+// NServiceBus 8 — transport configured directly
+var transport = new RabbitMQTransport();
 transport.ConnectionString("host=rabbitmq");
+transport.UseConventionalRoutingTopology(QueueType.Quorum);
 
-var routing = transport.Routing();
+var routing = endpointConfig.UseTransport(transport);
 routing.RouteToEndpoint(
     typeof(PerformIgnition), "RocketWorker");
 routing.RouteToEndpoint(
@@ -544,7 +641,7 @@ recoverability.Immediate(
 recoverability.Delayed(d => {
     d.NumberOfRetries(3);
     d.TimeIncrease(
-        TimeSpan.FromSeconds(10));
+        TimeSpan.FromSeconds(10)); // demo-tuned: 0.8s/1.2s/1.6s
 });
 
 // After 8 total retries:
@@ -554,6 +651,6 @@ recoverability.Delayed(d => {
 			}
 		],
 		complexity: 'High',
-		summary: 'The handlers make the same API calls as Temporal activities — but each one must also know what message to publish next. The orchestration that Temporal keeps in a single workflow file is scattered across the saga, handlers, message contracts, and routing config. To trace the mission flow, you hop between files following messages. Both approaches give you durability — but EDA pays for it with distributed complexity.'
+		summary: 'The handlers make the same service calls as Temporal activities — but each one must also know what message to publish next. The orchestration that Temporal keeps in a single workflow file is scattered across the saga, handlers, message contracts, and routing config. To trace the mission flow, you hop between files following messages. Both approaches give you durability — but EDA pays for it with distributed complexity.'
 	}
 };

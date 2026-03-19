@@ -55,6 +55,28 @@
 	function selectFile(index: number) {
 		fileIndexPerStrategy = { ...fileIndexPerStrategy, [selectedTab]: index };
 	}
+
+	// File tabs scroll state
+	let fileTabsEl = $state<HTMLElement | null>(null);
+	let canScrollLeft = $state(false);
+	let canScrollRight = $state(false);
+
+	function updateScrollIndicators() {
+		if (!fileTabsEl) return;
+		canScrollLeft = fileTabsEl.scrollLeft > 0;
+		canScrollRight = fileTabsEl.scrollLeft + fileTabsEl.clientWidth < fileTabsEl.scrollWidth - 1;
+	}
+
+	function scrollFileTabs(dir: 'left' | 'right') {
+		if (!fileTabsEl) return;
+		fileTabsEl.scrollBy({ left: dir === 'left' ? -120 : 120, behavior: 'smooth' });
+	}
+
+	$effect(() => {
+		// Re-check scroll indicators when strategy (and thus files) changes
+		selectedTab;
+		setTimeout(updateScrollIndicators, 0);
+	});
 </script>
 
 {#if $codePanelOpen}
@@ -119,23 +141,54 @@
 				</span>
 			</div>
 
-			<!-- File Tabs (IDE-style) -->
+			<!-- File Tabs (IDE-style, horizontally scrollable) -->
 			{#if snippet.files.length > 1}
-				<div class="flex flex-wrap px-4 gap-1 pb-1">
-					{#each snippet.files as file, i}
-						{@const isFileActive = selectedFileIndex === i}
+				<div class="relative flex items-center px-4 pb-1 gap-1">
+					<!-- Left arrow -->
+					{#if canScrollLeft}
 						<button
-							onclick={() => selectFile(i)}
-							class="px-2 py-1 font-mono text-[10px] whitespace-nowrap transition-all rounded"
-							style="
-								color: {isFileActive ? config.color : '#64748b'};
-								background: {isFileActive ? '#0a0e1a' : '#ffffff05'};
-								border: 1px solid {isFileActive ? config.color + '40' : '#ffffff10'};
-							"
-						>
-							{file.filename}
-						</button>
-					{/each}
+							onclick={() => scrollFileTabs('left')}
+							class="shrink-0 flex items-center justify-center w-5 h-5 rounded transition-colors hover:bg-white/10"
+							style="color: {config.color};"
+							aria-label="Scroll tabs left"
+						>‹</button>
+					{:else}
+						<div class="shrink-0 w-5 h-5"></div>
+					{/if}
+
+					<!-- Scrollable tab strip -->
+					<div
+						bind:this={fileTabsEl}
+						onscroll={updateScrollIndicators}
+						class="file-tab-scroll flex gap-1 overflow-x-auto flex-1 min-w-0"
+					>
+						{#each snippet.files as file, i}
+							{@const isFileActive = selectedFileIndex === i}
+							<button
+								onclick={() => selectFile(i)}
+								class="px-2 py-1 font-mono text-[10px] whitespace-nowrap transition-all rounded shrink-0"
+								style="
+									color: {isFileActive ? config.color : '#64748b'};
+									background: {isFileActive ? '#0a0e1a' : '#ffffff05'};
+									border: 1px solid {isFileActive ? config.color + '40' : '#ffffff10'};
+								"
+							>
+								{file.filename}
+							</button>
+						{/each}
+					</div>
+
+					<!-- Right arrow -->
+					{#if canScrollRight}
+						<button
+							onclick={() => scrollFileTabs('right')}
+							class="shrink-0 flex items-center justify-center w-5 h-5 rounded transition-colors hover:bg-white/10"
+							style="color: {config.color};"
+							aria-label="Scroll tabs right"
+						>›</button>
+					{:else}
+						<div class="shrink-0 w-5 h-5"></div>
+					{/if}
 				</div>
 			{/if}
 
@@ -244,7 +297,8 @@
 		font-size: 12px;
 		line-height: 1.625;
 		background: #0a0e1a !important;
-		overflow-x: auto;
+		overflow-x: visible;
+		min-width: max-content;
 	}
 
 	.shiki-container :global(pre.shiki code) {
@@ -255,6 +309,14 @@
 	.shiki-container :global(pre.shiki code .line) {
 		display: inline-block;
 		width: 100%;
+	}
+
+	.file-tab-scroll {
+		scrollbar-width: none;
+	}
+
+	.file-tab-scroll::-webkit-scrollbar {
+		display: none;
 	}
 
 	.shiki-container :global(pre.shiki code .line::before) {

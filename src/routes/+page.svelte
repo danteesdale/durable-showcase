@@ -48,34 +48,34 @@
 
 <div class="h-screen w-screen bg-space-bg flex flex-col overflow-hidden">
 	<!-- Header -->
-	<header class="relative z-20 px-6 py-3 flex items-center justify-between border-b" style="border-color: var(--color-panel-border);">
+	<header class="relative z-20 px-3 md:px-6 py-2 md:py-3 flex items-center justify-between border-b flex-wrap gap-2" style="border-color: var(--color-panel-border);">
 		<div>
-			<h1 class="font-display text-xl font-bold text-text-primary">Durable Showcase</h1>
+			<h1 class="font-display text-lg md:text-xl font-bold text-text-primary">Durable Showcase</h1>
 			<p class="font-body text-xs text-text-muted">Why Durable Execution Matters</p>
 		</div>
-		<div class="flex items-center gap-3">
+		<div class="flex items-center gap-2 md:gap-3 flex-wrap">
 			<button
 				onclick={startTour}
-				class="px-2.5 py-1 rounded text-[10px] font-mono font-bold border transition-colors hover:bg-cyan-500/10"
+				class="px-2 md:px-2.5 py-1 rounded text-[10px] font-mono font-bold border transition-colors hover:bg-cyan-500/10"
 				style="border-color: #00b4d840; color: #00b4d8;"
 			>
 				Guided Tour
 			</button>
 			<button
 				onclick={toggleCodePanel}
-				class="px-2.5 py-1 rounded text-[10px] font-mono border transition-colors hover:bg-white/5"
+				class="px-2 md:px-2.5 py-1 rounded text-[10px] font-mono border transition-colors hover:bg-white/5"
 				style="border-color: #ffffff15; color: #94a3b8;"
 			>
 				&#x2630; Code
 			</button>
 			<button
 				onclick={toggleInternalsPanel}
-				class="px-2.5 py-1 rounded text-[10px] font-mono border transition-colors hover:bg-white/5"
+				class="px-2 md:px-2.5 py-1 rounded text-[10px] font-mono border transition-colors hover:bg-white/5"
 				style="border-color: #ffffff15; color: #94a3b8;"
 			>
 				&#x2699; Internals
 			</button>
-			<span class="font-mono text-[10px] text-text-muted">
+			<span class="hidden md:inline font-mono text-[10px] text-text-muted">
 				250 service calls &middot; 6 stages &middot; 26 service groups
 			</span>
 		</div>

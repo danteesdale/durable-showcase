@@ -8,7 +8,6 @@ export const ROCKET_CONFIG: Record<StrategyType, {
 	label: string;
 	color: string;
 	glowColor: string;
-	emblem: string;
 	description: string;
 	goodFor: string;
 }> = {
@@ -16,7 +15,6 @@ export const ROCKET_CONFIG: Record<StrategyType, {
 		label: 'Temporal',
 		color: '#00b4d8',
 		glowColor: '#00b4d860',
-		emblem: '🛡',
 		description: 'Durable execution with infinite retries. State is preserved across failures.',
 		goodFor: 'Long-running workflows, multi-step processes, and any scenario where you need guaranteed completion.'
 	},
@@ -24,7 +22,6 @@ export const ROCKET_CONFIG: Record<StrategyType, {
 		label: 'Standard Retries',
 		color: '#f48c06',
 		glowColor: '#f48c0660',
-		emblem: '⟳',
 		description: 'Finite retries with exponential backoff. Good for transient faults.',
 		goodFor: 'Simple API calls with transient failures. Not designed for long-running multi-step workflows.'
 	},
@@ -32,7 +29,6 @@ export const ROCKET_CONFIG: Record<StrategyType, {
 		label: 'No Retries',
 		color: '#e63946',
 		glowColor: '#e6394660',
-		emblem: '✕',
 		description: 'No error handling. Any failure is terminal.',
 		goodFor: 'Idempotent operations where failure is acceptable, or where external systems handle retry.'
 	},
@@ -40,7 +36,6 @@ export const ROCKET_CONFIG: Record<StrategyType, {
 		label: 'Event-Driven',
 		color: '#7209b7',
 		glowColor: '#7209b760',
-		emblem: '⚡',
 		description: 'Event-driven sagas with message handlers. Messages retry then move to error queue for manual intervention.',
 		goodFor: 'Decoupled, independently deployable services with durable messaging and eventual consistency. Orchestration is distributed across sagas, handlers, and message contracts.'
 	}

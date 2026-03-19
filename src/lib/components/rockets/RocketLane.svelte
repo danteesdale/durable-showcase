@@ -45,8 +45,14 @@
 		}
 	});
 
-	// Compute nozzle position (left edge of rocket SVG = nozzle area)
-	const rocketPixelX = $derived($position * (trackWidth - 42)); // subtract right margin for 82px rocket
+	// Responsive rocket sizing: smaller on mobile
+	const isMobile = $derived(trackWidth < 500);
+	const rocketScale = $derived(isMobile ? 0.75 : 1);
+	const rocketWidth = $derived(82 * rocketScale);
+	const rocketOffset = $derived(rocketWidth / 2);
+
+	// Position so nose (right edge) aligns with progress point
+	const rocketPixelX = $derived($position * trackWidth - rocketWidth / 2 + 12);
 	const nozzleX = $derived(rocketPixelX); // nozzle is at the left of the rocket
 	const nozzleY = $derived(trackHeight / 2);
 
@@ -177,7 +183,7 @@
 		const sceneRect = sceneEl.getBoundingClientRect();
 		const trackRect = trackEl.getBoundingClientRect();
 
-		const rocketAbsX = trackRect.left + rocketPixelX + 41;
+		const rocketAbsX = trackRect.left + rocketPixelX + rocketOffset;
 		const rocketAbsY = trackRect.top + trackRect.height / 2;
 
 		if (rocket.isFirstToComplete) {
@@ -247,8 +253,8 @@
 
 		if (animType === 'winner') {
 			// Flip-and-burn: follow path nose-forward, then flip 180° to land nose-up
-			const flipStart = 0.3;
-			const flipEnd = 0.55;
+			const flipStart = 0.25;
+			const flipEnd = 0.65;
 			if (t <= flipStart) return tangentAngle;
 			if (t >= flipEnd) return tangentAngle + 180;
 			// Smoothstep blend during the flip
@@ -272,9 +278,10 @@
 	let menuOpen = $state(false);
 	let menuX = $state(0);
 	let menuY = $state(0);
+	let infoOpen = $state(false);
 
 	const MENU_WIDTH = 140;
-	const MENU_HEIGHT = 80;
+	const MENU_HEIGHT = 110;
 
 	function handleLaneClick(e: MouseEvent) {
 		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -300,7 +307,12 @@
 		selectRocketCode(rocket.id);
 	}
 
-	// Close menu on outside click
+	function handleViewInfo() {
+		menuOpen = false;
+		infoOpen = !infoOpen;
+	}
+
+	// Close menu/info on outside click
 	$effect(() => {
 		if (menuOpen) {
 			const handler = () => { menuOpen = false; };
@@ -314,18 +326,31 @@
 			};
 		}
 	});
+
+	$effect(() => {
+		if (infoOpen) {
+			const handler = () => { infoOpen = false; };
+			const timer = setTimeout(() => {
+				window.addEventListener('click', handler, { once: true });
+			}, 0);
+			return () => {
+				clearTimeout(timer);
+				window.removeEventListener('click', handler);
+			};
+		}
+	});
 </script>
 
 <div
-	class="relative flex items-center h-14 w-full cursor-pointer hover:bg-white/[0.02] transition-colors rounded"
+	class="relative flex flex-col md:flex-row md:items-center md:h-14 w-full cursor-pointer hover:bg-white/[0.02] transition-colors rounded"
 	style="{isAnimating ? 'z-index: 50;' : ''}"
 	onclick={handleLaneClick}
 	role="button"
 	tabindex="0"
 	onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleLaneClick(e as unknown as MouseEvent); }}
 >
-	<!-- Status label (left side) -->
-	<div class="shrink-0 w-[190px] pr-3">
+	<!-- Status label (above track on mobile, left side on desktop) -->
+	<div class="shrink-0 w-full md:w-[150px] pl-1 md:pl-0 md:pr-3 mb-6 md:mb-0">
 		<RocketStatus
 			strategyType={rocket.id}
 			state={rocket.state}
@@ -335,10 +360,10 @@
 	</div>
 
 	<!-- Track area -->
-	<div class="relative flex-1 h-full flex items-center" bind:this={trackEl}>
+	<div class="relative flex-1 w-full h-10 md:h-full flex items-center overflow-visible" bind:this={trackEl}>
 		<!-- Track line -->
 		<div
-			class="absolute left-0 right-8 top-1/2 transition-all duration-1000"
+			class="absolute left-0 right-4 md:right-8 top-1/2 transition-all duration-1000"
 			style="
 				height: {cascadeActive ? '2px' : '1px'};
 				background: {cascadeActive ? '#ffd60a60' : config.color + '20'};
@@ -371,21 +396,35 @@
 				{@const sweepDelay = flatIdx * 60}
 				{@const stageJustCompleted = animatingStages.has(stageIdx)}
 				{@const stageSweepDelay = groupIdx * 50}
+				{@const groupResult = rocket.stageResults[stageIdx]?.[groupIdx]}
+				<!-- Wrapper handles centering; inner dot handles visuals + animation -->
 				<div
-					class="absolute top-1/2 -translate-y-1/2 rounded-full border transition-all duration-200 {cascadeActive ? 'cascade-dot' : ''} {stageJustCompleted && !cascadeActive ? 'stage-complete-dot' : ''}"
-					style="
-						left: {dotLeft}%;
-						transform: translateX(-50%) translateY(-50%);
-						width: {cascadeActive ? '0.875rem' : '0.625rem'};
-						height: {cascadeActive ? '0.875rem' : '0.625rem'};
-						background: {cascadeActive ? '#ffd60a50' : status === 'pending' ? 'transparent' : clusterColor(status) + '30'};
-						border-color: {cascadeActive ? '#ffd60a' : clusterColor(status)};
-						{cascadeActive ? `box-shadow: 0 0 8px #ffd60a80, 0 0 16px #ffd60a40; animation-delay: ${sweepDelay}ms;` : ''}
-						{stageJustCompleted && !cascadeActive ? `animation-delay: ${stageSweepDelay}ms;` : ''}
-						{!cascadeActive && !stageJustCompleted && status === 'in-progress' ? 'box-shadow: 0 0 6px ' + clusterColor(status) + '80; animation: pulse 1.5s ease-in-out infinite;' : ''}
-					"
-					title="{rocket.stageResults[stageIdx]?.[groupIdx]?.groupName ?? ''}: {rocket.stageResults[stageIdx]?.[groupIdx]?.completedCalls ?? 0}/{rocket.stageResults[stageIdx]?.[groupIdx]?.totalCalls ?? 0} calls"
-				></div>
+					class="absolute group/dot"
+					style="left: {dotLeft}%; top: 50%; transform: translateX(-50%) translateY(-50%);"
+				>
+					<div
+						class="rounded-full border transition-all duration-200 dot-size {cascadeActive ? 'cascade-dot' : ''} {stageJustCompleted && !cascadeActive ? 'stage-complete-dot' : ''}"
+						style="
+							background: {cascadeActive ? '#ffd60a50' : status === 'pending' ? 'transparent' : clusterColor(status) + '30'};
+							border-color: {cascadeActive ? '#ffd60a' : clusterColor(status)};
+							{cascadeActive ? `box-shadow: 0 0 8px #ffd60a80, 0 0 16px #ffd60a40; animation-delay: ${sweepDelay}ms;` : ''}
+							{stageJustCompleted && !cascadeActive ? `animation-delay: ${stageSweepDelay}ms;` : ''}
+							{!cascadeActive && !stageJustCompleted && status === 'in-progress' ? 'box-shadow: 0 0 6px ' + clusterColor(status) + '80; animation: pulse 1.5s ease-in-out infinite;' : ''}
+						"
+					></div>
+					<!-- Custom tooltip -->
+					<div
+						class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none
+						       opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150
+						       whitespace-nowrap px-2 py-1 rounded border font-mono"
+						style="font-size: 10px; background: #1a1e2e; border-color: #ffffff20; color: #94a3b8; box-shadow: 0 2px 10px rgba(0,0,0,0.6);"
+					>
+						<span style="color: #e2e8f0;">{groupResult?.groupName ?? ''}</span>
+						<span style="color: #64748b;"> · </span>
+						<span style="color: {clusterColor(status)};">{groupResult?.completedCalls ?? 0}/{groupResult?.totalCalls ?? 0}</span>
+						<span style="color: #64748b;"> calls</span>
+					</div>
+				</div>
 			{/each}
 		{/each}
 
@@ -409,7 +448,7 @@
 		{#if showExplosion}
 			<Explosion
 				strategyType={rocket.id}
-				x={rocketPixelX + 41}
+				x={rocketPixelX + rocketOffset}
 				y={nozzleY}
 			/>
 		{/if}
@@ -418,7 +457,7 @@
 		{#if showSuccess}
 			<SuccessEffect
 				strategyType={rocket.id}
-				x={rocketPixelX + 41}
+				x={rocketPixelX + rocketOffset}
 				y={nozzleY}
 			/>
 		{/if}
@@ -437,9 +476,9 @@
 		{#if isStalled}
 			<div
 				class="absolute z-30 font-mono text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap animate-pulse"
-				style="left: {rocketPixelX + 86}px; top: {nozzleY - 20}px; background: #e6394625; color: #e63946;"
+				style="left: {rocketPixelX + rocketWidth + 4}px; top: {nozzleY - 20}px; background: #e6394625; color: #e63946;"
 			>
-				⚠ Error Queue — Awaiting Manual Intervention...
+				⚠ <span class="hidden md:inline">Error Queue — Awaiting Manual Intervention...</span><span class="md:hidden">Error Queue</span>
 			</div>
 		{/if}
 
@@ -447,9 +486,9 @@
 		<div
 			class="absolute z-20"
 			style="
-				left: calc({$position * 100}% - 38px);
+				left: {rocketPixelX}px;
 				top: 50%;
-				transform: translateY(-50%) translate({animX}px, {animY}px) rotate({animRotation}deg) scale({animScale});
+				transform: translateY(-50%) translate({animX}px, {animY}px) rotate({animRotation}deg) scale({animScale * rocketScale});
 				opacity: {animOpacity};
 				transform-origin: center center;
 				transition: none;
@@ -504,11 +543,73 @@
 				<span class="text-sm opacity-70">&#x2699;</span>
 				<span>Internals</span>
 			</button>
+		<div class="md:hidden" style="height: 1px; background: {config.color}15;"></div>
+		<button
+			class="md:hidden flex items-center gap-2 w-full px-4 py-2.5 font-mono text-[12px] text-left transition-colors hover:bg-white/[0.06]"
+			style="color: {config.color};"
+			onclick={handleViewInfo}
+			role="menuitem"
+		>
+			<span class="text-sm opacity-70">&#x24D8;</span>
+			<span>Info</span>
+		</button>
+		</div>
+	{/if}
+
+	<!-- Info panel -->
+	{#if infoOpen}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			class="md:hidden absolute left-1 right-1 top-full z-50 p-3 rounded-lg border font-mono"
+			onclick={(e) => e.stopPropagation()}
+			role="region"
+			style="
+				background: #1a1e2e;
+				border-color: {config.color}30;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 10px {config.color}10;
+			"
+		>
+			<div class="flex items-start justify-between gap-2 mb-1.5">
+				<span class="text-[11px] font-semibold" style="color: {config.color};">{config.label}</span>
+				<button
+					class="text-[10px] opacity-40 hover:opacity-80 transition-opacity leading-none"
+					style="color: {config.color};"
+					onclick={(e) => { e.stopPropagation(); infoOpen = false; }}
+					aria-label="Close"
+				>✕</button>
+			</div>
+			<p class="text-[10px] leading-relaxed mb-1.5" style="color: #94a3b8;">{config.description}</p>
+			<p class="text-[10px]" style="color: {config.color};">Good for: <span style="color: #64748b;">{config.goodFor}</span></p>
 		</div>
 	{/if}
 </div>
 
 <style>
+	.dot-size {
+		width: 0.4rem;
+		height: 0.4rem;
+	}
+
+	@media (min-width: 768px) {
+		.dot-size {
+			width: 0.625rem;
+			height: 0.625rem;
+		}
+	}
+
+	.cascade-dot.dot-size {
+		width: 0.5rem;
+		height: 0.5rem;
+	}
+
+	@media (min-width: 768px) {
+		.cascade-dot.dot-size {
+			width: 0.875rem;
+			height: 0.875rem;
+		}
+	}
+
 	.context-menu-appear {
 		animation: menu-pop 0.15s ease-out;
 	}
@@ -528,16 +629,16 @@
 
 	@keyframes stage-complete-ripple {
 		0% {
-			transform: translateX(-50%) translateY(-50%) scale(1);
+			transform: scale(1);
 		}
 		30% {
-			transform: translateX(-50%) translateY(-50%) scale(1.6);
+			transform: scale(1.6);
 			background: #06d6a060 !important;
 			border-color: #06d6a0 !important;
 			box-shadow: 0 0 8px #06d6a070, 0 0 14px #06d6a030;
 		}
 		100% {
-			transform: translateX(-50%) translateY(-50%) scale(1);
+			transform: scale(1);
 			background: #06d6a030 !important;
 			border-color: #06d6a0 !important;
 			box-shadow: none;
@@ -546,23 +647,23 @@
 
 	@keyframes cascade-flash {
 		0% {
-			transform: translateX(-50%) translateY(-50%) scale(1);
+			transform: scale(1);
 			box-shadow: 0 0 4px #ffd60a40;
 		}
 		20% {
-			transform: translateX(-50%) translateY(-50%) scale(2.2);
+			transform: scale(2.2);
 			background: #ffffffcc !important;
 			border-color: #ffffff !important;
 			box-shadow: 0 0 16px #ffd60aee, 0 0 30px #ffd60a80, 0 0 50px #ffd60a40;
 		}
 		50% {
-			transform: translateX(-50%) translateY(-50%) scale(1.5);
+			transform: scale(1.5);
 			background: #ffd60a80 !important;
 			border-color: #ffd60a !important;
 			box-shadow: 0 0 10px #ffd60aaa, 0 0 20px #ffd60a50;
 		}
 		100% {
-			transform: translateX(-50%) translateY(-50%) scale(1.3);
+			transform: scale(1.3);
 			background: #ffd60a50 !important;
 			border-color: #ffd60a !important;
 			box-shadow: 0 0 8px #ffd60a80, 0 0 16px #ffd60a40;

@@ -26,7 +26,7 @@ export const tourSteps: TourStep[] = [
 	{
 		title: 'The Distributed Systems Challenge',
 		description:
-			'In distributed systems, a single request can touch hundreds of services. This mission simulates 250 service calls across 6 stages. What happens when things go wrong?',
+			'In distributed systems, a single request can touch many services. This mission simulates 250 service calls across 6 stages. What happens when things go wrong?',
 		highlight: null,
 		position: 'center',
 		durationMs: 8000
@@ -60,12 +60,12 @@ export const tourSteps: TourStep[] = [
 			{ type: 'set-infra-down', value: false },
 			{ type: 'launch' }
 		],
-		durationMs: 12000
+		durationMs: 10000
 	},
 	{
 		title: 'Real-World Conditions',
 		description:
-			'Services aren\'t 100% reliable. At 75% per-call availability with 250 calls, even strategies with retries are under serious pressure. Watch what happens.',
+			'Real outages are temporary - but even a short window of degraded availability can exhaust a finite retry budget across 250 calls. Watch what happens.',
 		highlight: '[data-tour="availability"]',
 		position: 'top',
 		actions: [
@@ -73,7 +73,7 @@ export const tourSteps: TourStep[] = [
 			{ type: 'set-availability', value: 75 },
 			{ type: 'launch' }
 		],
-		durationMs: 18000
+		durationMs: 16000
 	},
 	{
 		title: 'The Failures Stack Up',
@@ -81,20 +81,20 @@ export const tourSteps: TourStep[] = [
 			'No Retries explodes on the first failure. Standard Retries burns through its 3 attempts quickly and crashes. Event-Driven has more retries but can still exhaust them — and if it does, messages land in an error queue.',
 		highlight: '[data-tour="rocket-lanes"]',
 		position: 'bottom-left',
-		durationMs: 10000
+		durationMs: 14000
 	},
 	{
-		title: 'Durable Execution Wins',
+		title: 'The Retries Prevent Failure',
 		description:
-			'The Temporal rocket pauses, waits, and resumes from exactly where it stopped. No data lost, no duplicate calls. Infinite retries with full state preservation — it always completes.',
+			'Temporal keeps retrying with exponential backoff, and once things are stable it resumes from exactly where it left off. No data lost, no duplicate calls. Infinite retries and full state preservation mean it always completes.',
 		highlight: '[data-tour="rocket-lanes"]',
 		position: 'bottom-left',
-		durationMs: 8000
+		durationMs: 12000
 	},
 	{
 		title: 'Infrastructure Goes Down',
 		description:
-			'Infrastructure just went down completely. No Retries and Standard Retries are immediately eliminated. The Event-Driven rocket is burning through its retry budget. Temporal pauses and waits.',
+			'Infrastructure just went down completely. No Retries and Standard Retries are immediately eliminated. The Event-Driven rocket is burning through its retry budget. Temporal retries durably.',
 		highlight: '[data-tour="infra-toggle"]',
 		position: 'top',
 		actions: [
@@ -108,10 +108,10 @@ export const tourSteps: TourStep[] = [
 			// Bring infra back at 8s — Temporal backoff is still small (~1-2s), resumes quickly
 			// EDA is mid-stall, repair ship hasn't even arrived yet
 			{ type: 'infra-schedule', schedule: [
-				[8000, false],
+				[11000, false],
 			]},
 		],
-		durationMs: 13000
+		durationMs: 14000
 	},
 	{
 		title: 'Infrastructure Recovers',
@@ -124,7 +124,7 @@ export const tourSteps: TourStep[] = [
 	{
 		title: 'The Code Tells the Story',
 		description:
-			'Both Temporal and Event-Driven need activity/handler code to do the actual work. The difference? Temporal keeps your orchestration as linear business logic in one file. Event-Driven scatters it across sagas, handlers, message classes, and config — ~300 lines of infrastructure code on top of your business logic.',
+			'Both Temporal and Event-Driven need activity or handler code to do the actual work. The difference? Temporal keeps your orchestration as linear business logic together. With Event-Driven it is dispersed across sagas, events and message handlers.',
 		highlight: null,
 		position: 'center',
 		actions: [{ type: 'open-code-panel', strategy: 'temporal' }],

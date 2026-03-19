@@ -9,6 +9,10 @@
 	const isFirst = $derived($tourStep === 0);
 	const isLast = $derived($tourStep === tourSteps.length - 1);
 
+	// Responsive: pin tour card to bottom on mobile
+	let innerWidth = $state(window.innerWidth);
+	const isMobile = $derived(innerWidth < 768);
+
 
 	// Timer state managed outside Svelte reactivity to avoid infinite loops
 	let timerBarEl: HTMLDivElement | undefined = $state();
@@ -158,22 +162,25 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onresize={() => innerWidth = window.innerWidth} />
 
 {#if $tourActive && step}
 	<!-- Overlay — semi-transparent so rockets stay visible -->
 	<div class="fixed inset-0 z-50 pointer-events-none">
 		<div class="absolute inset-0 bg-black/30 pointer-events-auto"></div>
 
-		<!-- Tour card — moves based on step position -->
+		<!-- Tour card — moves based on step position; pinned to bottom on mobile -->
 		<div
 			class="absolute z-60 pointer-events-auto"
 			style="
-				{step.position === 'center' ? 'top: 45%; left: 50%; transform: translate(-50%, -50%);' : ''}
-				{step.position === 'top' ? 'bottom: 180px; left: 50%; transform: translateX(-50%);' : ''}
-				{step.position === 'bottom-left' ? 'bottom: 160px; left: 24px;' : ''}
-				{step.position === 'bottom-center' ? 'bottom: 160px; left: 50%; transform: translateX(-50%);' : ''}
-				{step.position === 'bottom-right' ? 'bottom: 160px; right: 24px;' : ''}
+				{isMobile
+					? 'bottom: 12px; left: 12px; right: 12px;'
+					: step.position === 'center' ? 'top: 45%; left: 50%; transform: translate(-50%, -50%);'
+					: step.position === 'top' ? 'bottom: 180px; left: 50%; transform: translateX(-50%);'
+					: step.position === 'bottom-left' ? 'bottom: 160px; left: 24px;'
+					: step.position === 'bottom-center' ? 'bottom: 160px; left: 50%; transform: translateX(-50%);'
+					: step.position === 'bottom-right' ? 'bottom: 160px; right: 24px;'
+					: ''}
 				transition: all 0.4s ease-out;
 			"
 		>

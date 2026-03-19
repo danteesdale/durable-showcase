@@ -4,7 +4,6 @@ import type {
 	ExecutionStrategy,
 	CallResult,
 	GroupResult,
-	SimulationEvent,
 	StrategyType
 } from './types';
 import { MISSION } from './missionStages';
@@ -210,7 +209,8 @@ function tickRocket(
 		rocket.repairTimeRemaining -= deltaMs;
 		rocket.repairShipProgress = 1 - Math.max(0, rocket.repairTimeRemaining / TIMING.REPAIR_DOCKED_DURATION);
 		if (rocket.repairTimeRemaining <= 0) {
-			// Repair complete — reset EDA retry budgets and resume rocket
+			// Repair complete — clear error queue, reset EDA retry budgets and resume rocket
+			rocket.errorQueueMessages = [];
 			rocket.immediateRetriesRemaining = TIMING.NSERVICEBUS_IMMEDIATE_RETRIES;
 			rocket.delayedRetriesRemaining = TIMING.NSERVICEBUS_DELAYED_RETRIES;
 			rocket.retryCount = 0;
@@ -257,13 +257,21 @@ function tickRocket(
 			// Timer expired — retry the call
 			rocket.backoffTimerRemaining = 0;
 
-			// Add timer fired event for Temporal
+			// Backoff expired — Temporal server dispatches a new attempt.
+			// Each retry gets its own ActivityTaskScheduled event (no TimerFired).
 			if (rocket.id === 'temporal') {
+				const retryCall = rocket.stageResults[rocket.currentStageIndex]?.[rocket.currentGroupIndex]?.callResults[rocket.currentCallIndex];
 				rocket.workflowHistory.push({
 					eventId: rocket.workflowHistory.length + 1,
-					eventType: 'TimerFired',
+					eventType: 'ActivityTaskScheduled',
 					timestamp: simTime,
-					attributes: {}
+					attributes: { activityType: retryCall?.callId ?? 'unknown' }
+				});
+				rocket.workflowHistory.push({
+					eventId: rocket.workflowHistory.length + 1,
+					eventType: 'ActivityTaskStarted',
+					timestamp: simTime,
+					attributes: { attempt: rocket.retryCount + 1 }
 				});
 			}
 
@@ -328,7 +336,6 @@ function handleCallSuccess(
 	}
 
 	// Log success event
-	const strategy = strategies[rocket.id];
 	rocket.eventLog.push({
 		timestamp: simTime,
 		rocketId: rocket.id,
@@ -395,6 +402,12 @@ function advanceToNextCall(rocket: RocketSimulation, simTime: number): void {
 				timestamp: simTime,
 				attributes: { activityType: callResult.callId }
 			});
+			rocket.workflowHistory.push({
+				eventId: rocket.workflowHistory.length + 1,
+				eventType: 'ActivityTaskStarted',
+				timestamp: simTime,
+				attributes: { attempt: 1 }
+			});
 		}
 		return;
 	}
@@ -416,6 +429,12 @@ function advanceToNextCall(rocket: RocketSimulation, simTime: number): void {
 				eventType: 'ActivityTaskScheduled',
 				timestamp: simTime,
 				attributes: { activityType: newGroup.callResults[0].callId }
+			});
+			rocket.workflowHistory.push({
+				eventId: rocket.workflowHistory.length + 1,
+				eventType: 'ActivityTaskStarted',
+				timestamp: simTime,
+				attributes: { attempt: 1 }
 			});
 		}
 		return;
@@ -444,6 +463,12 @@ function advanceToNextCall(rocket: RocketSimulation, simTime: number): void {
 				eventType: 'ActivityTaskScheduled',
 				timestamp: simTime,
 				attributes: { activityType: newStage[0].callResults[0].callId }
+			});
+			rocket.workflowHistory.push({
+				eventId: rocket.workflowHistory.length + 1,
+				eventType: 'ActivityTaskStarted',
+				timestamp: simTime,
+				attributes: { attempt: 1 }
 			});
 		}
 		return;
@@ -494,6 +519,12 @@ export function launchRockets(rockets: RocketSimulation[], simTime: number): Roc
 				eventType: 'ActivityTaskScheduled',
 				timestamp: simTime,
 				attributes: { activityType: rocket.stageResults[0][0].callResults[0].callId }
+			});
+			rocket.workflowHistory.push({
+				eventId: 3,
+				eventType: 'ActivityTaskStarted',
+				timestamp: simTime,
+				attributes: { attempt: 1 }
 			});
 		}
 

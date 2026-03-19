@@ -99,23 +99,23 @@
 </script>
 
 <div
-	class="relative z-20 border-t backdrop-blur-xl px-6 py-4 transition-all duration-300"
+	class="relative z-20 border-t backdrop-blur-xl px-3 md:px-6 py-3 md:py-4 transition-all duration-300"
 	class:chaos-panel-flash={panelFlash && !isRestore}
 	class:chaos-panel-restore={panelFlash && isRestore}
 	style="background: var(--color-panel-bg); border-color: var(--color-panel-border);"
 >
 	<!-- Header -->
-	<div class="flex items-center justify-between mb-3">
-		<div class="flex items-center gap-3">
-			<h2 class="font-display text-sm font-semibold text-text-secondary tracking-wider uppercase">
+	<div class="flex items-center justify-between mb-2 md:mb-3 gap-2 overflow-hidden">
+		<div class="flex items-center gap-2 md:gap-3 min-w-0">
+			<h2 class="font-display text-xs md:text-sm font-semibold text-text-secondary tracking-wider uppercase shrink-0">
 				Mission Control
 			</h2>
 
 			<!-- Mode Toggle -->
-			<div class="flex items-center rounded-full border overflow-hidden" style="border-color: #ffffff15;">
+			<div class="flex items-center rounded-full border overflow-hidden shrink-0" style="border-color: #ffffff15;">
 				<button
 					onclick={() => { if (!isChaos) toggleMode(); }}
-					class="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold transition-all"
+					class="flex items-center gap-1 md:gap-1.5 px-2 md:px-2.5 py-1 text-[9px] md:text-[10px] font-mono font-bold transition-all"
 					style="
 						background: {isChaos ? '#f48c0620' : 'transparent'};
 						color: {isChaos ? '#f48c06' : '#64748b'};
@@ -127,7 +127,7 @@
 				<div class="w-px h-4" style="background: #ffffff15;"></div>
 				<button
 					onclick={() => { if (isChaos) toggleMode(); }}
-					class="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold transition-all"
+					class="flex items-center gap-1 md:gap-1.5 px-2 md:px-2.5 py-1 text-[9px] md:text-[10px] font-mono font-bold transition-all"
 					style="
 						background: {!isChaos ? '#ffffff10' : 'transparent'};
 						color: {!isChaos ? '#e2e8f0' : '#64748b'};
@@ -137,10 +137,10 @@
 				</button>
 			</div>
 
-			<!-- Chaos action ticker -->
+			<!-- Chaos action ticker (desktop): inline after mode toggle -->
 			{#if isChaos && actionVisible}
 				<div
-					class="font-mono text-xs font-bold px-3 py-1.5 rounded-md chaos-action-flash"
+					class="hidden md:block font-mono text-xs font-bold px-3 py-1 rounded-md chaos-action-flash truncate"
 					style="
 						background: {isRestore ? '#06d6a020' : '#f48c0625'};
 						color: {isRestore ? '#06d6a0' : '#f48c06'};
@@ -153,16 +153,33 @@
 			{/if}
 		</div>
 
-		<div class="font-mono text-[10px] text-text-muted">
+		<div class="hidden md:block font-mono text-[10px] text-text-muted whitespace-nowrap shrink-0">
 			{#if $failureConfig.serviceAvailability < 100}
 				Mission success (no retries): <span class="text-warning font-bold">{successProb.toFixed(1)}%</span>
 			{/if}
 		</div>
 	</div>
+	<!-- Mobile ticker: fixed height slot so layout doesn't shift -->
+	{#if isChaos}
+		<div class="md:hidden h-5 -mt-1 mb-1">
+			{#if actionVisible}
+				<div
+					class="font-mono text-[8px] font-bold px-1.5 py-0.5 rounded chaos-action-flash truncate w-fit"
+					style="
+						background: {isRestore ? '#06d6a020' : '#f48c0625'};
+						color: {isRestore ? '#06d6a0' : '#f48c06'};
+						border: 1px solid {isRestore ? '#06d6a050' : '#f48c0650'};
+					"
+				>
+					{isRestore ? '✅' : '🐵'} {actionText}
+				</div>
+			{/if}
+		</div>
+	{/if}
 
-	<div class="flex items-end gap-6 flex-wrap">
+	<div class="grid grid-cols-2 md:flex md:items-end gap-3 md:gap-6 md:flex-wrap">
 		<!-- Service Availability -->
-		<div class="flex flex-col gap-1 min-w-[160px]" class:opacity-40={controlsDisabled} data-tour="availability">
+		<div class="flex flex-col gap-1 col-span-2 md:col-span-1 min-w-0 md:min-w-[160px]" class:opacity-40={controlsDisabled} data-tour="availability">
 			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">
 				Service Availability
 			</span>
@@ -186,7 +203,7 @@
 		</div>
 
 		<!-- Network Failure -->
-		<div class="flex flex-col gap-1 min-w-[140px]" class:opacity-40={controlsDisabled}>
+		<div class="flex flex-col gap-1 col-span-2 md:col-span-1 min-w-0 md:min-w-[140px]" class:opacity-40={controlsDisabled}>
 			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">
 				Network Failure
 			</span>
@@ -210,7 +227,7 @@
 		</div>
 
 		<!-- Rate Limit Toggle -->
-		<div class="flex flex-col gap-1" class:opacity-40={controlsDisabled}>
+		<div class="flex flex-col gap-1 col-span-1" class:opacity-40={controlsDisabled}>
 			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">
 				Rate Limit
 			</span>
@@ -229,7 +246,7 @@
 		</div>
 
 		<!-- Infrastructure Down -->
-		<div class="flex flex-col gap-1" class:opacity-40={controlsDisabled} data-tour="infra-toggle">
+		<div class="flex flex-col gap-1 col-span-1" class:opacity-40={controlsDisabled} data-tour="infra-toggle">
 			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">
 				Infrastructure
 			</span>
@@ -248,11 +265,11 @@
 			</button>
 		</div>
 
-		<!-- Spacer -->
-		<div class="flex-1"></div>
+		<!-- Spacer (desktop only) -->
+		<div class="hidden md:block flex-1"></div>
 
 		<!-- Speed Control -->
-		<div class="flex flex-col gap-1">
+		<div class="flex flex-col gap-1 col-span-1">
 			<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">Speed</span>
 			<div class="flex gap-1">
 				{#each SPEED_OPTIONS as s}
@@ -272,7 +289,7 @@
 		</div>
 
 		<!-- Launch / Reset -->
-		<div class="flex gap-2">
+		<div class="flex gap-2 col-span-1">
 			<button
 				onclick={handleReset}
 				class="px-3 py-2 rounded text-xs font-mono border border-white/10 text-text-secondary hover:text-text-primary hover:border-white/20 transition-colors"

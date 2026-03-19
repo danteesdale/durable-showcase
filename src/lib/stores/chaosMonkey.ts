@@ -44,7 +44,6 @@ function restoreAll() {
 /**
  * A single chaos "incident" — kills one thing completely,
  * holds it for a duration, then restores it.
- * Like Netflix: terminate one instance, not everything.
  */
 type Incident = {
 	name: string;
@@ -54,8 +53,6 @@ type Incident = {
 	execute: () => { restore: () => void; durationMs: number };
 };
 
-// EDA exhausts retries in ~10s (5×150ms immediate + 3 delayed at 1.5/2.5/3.5s + call durations)
-// Full kills must last longer than that to force DLQ messages.
 const FULL_KILL_MIN = 14000;  // 14s minimum for full outages
 const FULL_KILL_MAX = 22000;  // 22s maximum
 const PARTIAL_MIN = 5000;     // 5s for partial degradation
@@ -67,7 +64,7 @@ const incidents: Incident[] = [
 		weight: 4,
 		execute: () => {
 			// Kill service availability — simulates instance termination
-			// Netflix kills the instance and it stays dead until replacement spins up
+			// Chaos Monkey kills the instance and it stays dead until replacement spins up
 			const severity = Math.random();
 			let target: number;
 			let label: string;

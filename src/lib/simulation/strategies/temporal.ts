@@ -4,7 +4,7 @@ import { TIMING } from '../../constants';
 /**
  * Temporal Durable Execution Strategy
  *
- * - Infinite retries with exponential backoff (1s → 2s → 4s → ... → 30s cap)
+ * - Infinite retries with exponential backoff (150ms → 300ms → 600ms → ... → 5s cap, demo-tuned)
  * - Full state preservation: resumes from exact failure point
  * - Workflow history tracks every event (mimics Temporal Web UI)
  */
@@ -12,7 +12,7 @@ export const temporalStrategy: ExecutionStrategy = {
 	type: 'temporal',
 
 	onFailure(rocket: RocketSimulation, failureType: FailureType, simTime: number): RocketSimulation {
-		rocket.state = 'paused';
+		rocket.state = 'retrying';
 		rocket.retryCount++;
 		rocket.totalRetries++;
 
@@ -37,15 +37,6 @@ export const temporalStrategy: ExecutionStrategy = {
 				activityType: currentCall?.callId ?? 'unknown',
 				failure: failureType,
 				attempt: rocket.retryCount
-			}
-		});
-
-		rocket.workflowHistory.push({
-			eventId: rocket.workflowHistory.length + 1,
-			eventType: 'TimerStarted',
-			timestamp: simTime,
-			attributes: {
-				duration: `${(interval / 1000).toFixed(1)}s`
 			}
 		});
 
@@ -90,10 +81,6 @@ function formatTemporalEvent(eventType: string, detail?: Record<string, unknown>
 			return `ActivityTaskCompleted { result: "OK" }`;
 		case 'ActivityTaskFailed':
 			return `ActivityTaskFailed { failure: "${detail?.failureType}", attempt: ${detail?.attempt} }`;
-		case 'TimerStarted':
-			return `TimerStarted { duration: "${detail?.nextRetryIn}" }`;
-		case 'TimerFired':
-			return 'TimerFired {}';
 		case 'WorkflowExecutionCompleted':
 			return 'WorkflowExecutionCompleted { result: "Mission Complete" }';
 		default:

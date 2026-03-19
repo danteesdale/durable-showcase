@@ -59,7 +59,7 @@
 					: 0
 	);
 
-	const shieldVisible = $derived(state === 'paused');
+	const shieldVisible = $derived(state === 'retrying' && strategyType === 'temporal');
 	const isExploded = $derived(state === 'failed');
 </script>
 

@@ -10,10 +10,13 @@
 
 	let logEl: HTMLDivElement | undefined = $state();
 
-	// Auto-scroll to bottom when new events arrive
+	// Auto-scroll to bottom only if the user hasn't scrolled up
 	$effect(() => {
 		if (events.length && logEl) {
-			logEl.scrollTop = logEl.scrollHeight;
+			const isAtBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 50;
+			if (isAtBottom) {
+				logEl.scrollTop = logEl.scrollHeight;
+			}
 		}
 	});
 </script>

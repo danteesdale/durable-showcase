@@ -218,7 +218,7 @@
 
 			<!-- Summary -->
 			<div
-				class="rounded mx-4 mt-4 mb-2 p-3 font-mono text-[11px]"
+				class="rounded mx-4 mt-4 mb-2 p-3 font-mono text-[11px] max-h-[5rem] md:max-h-none overflow-y-auto"
 				style="background: {config.color}10; border: 1px solid {config.color}30; color: #c8d0dc;"
 			>
 				{snippet.summary}

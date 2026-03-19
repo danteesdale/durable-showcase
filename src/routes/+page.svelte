@@ -46,7 +46,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="h-screen w-screen bg-space-bg flex flex-col overflow-hidden">
+<div class="h-dvh w-dvw bg-space-bg flex flex-col overflow-hidden">
 	<!-- Header -->
 	<header class="relative z-20 px-3 md:px-6 py-2 md:py-3 flex items-center justify-between border-b flex-wrap gap-2" style="border-color: var(--color-panel-border);">
 		<div>

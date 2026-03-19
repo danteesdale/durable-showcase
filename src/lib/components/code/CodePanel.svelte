@@ -129,7 +129,7 @@
 		<!-- Code Content -->
 		<div class="flex-1 overflow-y-auto flex flex-col min-h-0">
 			<!-- Title + Complexity -->
-			<div class="flex items-center justify-between px-4 pt-3 pb-2">
+			<div class="flex items-center justify-between px-4 pt-2 pb-1 md:pt-3 md:pb-2">
 				<h4 class="font-display text-sm font-semibold" style="color: {config.color};">
 					{snippet.title}
 				</h4>
@@ -218,32 +218,32 @@
 
 			<!-- Summary -->
 			<div
-				class="rounded mx-4 mt-4 mb-2 p-3 font-mono text-[11px] max-h-[5rem] md:max-h-none overflow-y-auto"
+				class="rounded mx-4 mt-2 mb-1 md:mt-4 md:mb-2 p-2 md:p-3 font-mono text-[11px] max-h-[4.5rem] md:max-h-none overflow-y-auto"
 				style="background: {config.color}10; border: 1px solid {config.color}30; color: #c8d0dc;"
 			>
 				{snippet.summary}
 			</div>
 
 			<!-- Comparison Bars -->
-			<div class="flex flex-col gap-3 px-4 pb-4">
+			<div class="grid grid-cols-2 md:flex md:flex-col gap-2 md:gap-3 px-4 pb-3 md:pb-4">
 				<!-- Complexity -->
-				<div class="flex flex-col gap-1.5">
+				<div class="flex flex-col gap-1 md:gap-1.5">
 					<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">Complexity</span>
-					<div class="flex flex-col gap-1">
+					<div class="flex flex-col gap-0.5 md:gap-1">
 						{#each strategyTabs as tab}
 							{@const s = codeSnippets[tab]}
 							{@const c = ROCKET_CONFIG[tab]}
 							{@const level = complexityLevels[s.complexity] ?? 1}
 							{@const barWidth = (level / 4) * 100}
-							<div class="flex items-center gap-2">
-								<span class="font-mono text-[11px] w-24 text-right shrink-0 font-semibold" style="color: {c.color};">{c.label}</span>
-								<div class="flex-1 h-2 rounded-full overflow-hidden" style="background: #ffffff08;">
+							<div class="flex items-center gap-1 md:gap-2">
+								<span class="font-mono text-[9px] md:text-[11px] w-12 md:w-24 text-right shrink-0 font-semibold" style="color: {c.color};">{c.label}</span>
+								<div class="flex-1 h-1.5 md:h-2 rounded-full overflow-hidden" style="background: #ffffff08;">
 									<div
 										class="h-full rounded-full transition-all duration-300"
 										style="width: {barWidth}%; background: {c.color}; opacity: {tab === selectedTab ? 1 : 0.4};"
 									></div>
 								</div>
-								<span class="font-mono text-[11px] w-16 shrink-0" style="color: {c.color};">
+								<span class="hidden md:block font-mono text-[11px] w-16 shrink-0" style="color: {c.color};">
 									{s.complexity}
 								</span>
 							</div>
@@ -252,22 +252,22 @@
 				</div>
 
 				<!-- Durability -->
-				<div class="flex flex-col gap-1.5">
+				<div class="flex flex-col gap-1 md:gap-1.5">
 					<span class="font-mono text-[10px] text-text-muted uppercase tracking-wider">Durability</span>
-					<div class="flex flex-col gap-1">
+					<div class="flex flex-col gap-0.5 md:gap-1">
 						{#each strategyTabs as tab}
 							{@const d = durabilityLevels[tab]}
 							{@const c = ROCKET_CONFIG[tab]}
 							{@const barWidth = (d.level / 4) * 100}
-							<div class="flex items-center gap-2">
-								<span class="font-mono text-[11px] w-24 text-right shrink-0 font-semibold" style="color: {c.color};">{c.label}</span>
-								<div class="flex-1 h-2 rounded-full overflow-hidden" style="background: #ffffff08;">
+							<div class="flex items-center gap-1 md:gap-2">
+								<span class="font-mono text-[9px] md:text-[11px] w-12 md:w-24 text-right shrink-0 font-semibold" style="color: {c.color};">{c.label}</span>
+								<div class="flex-1 h-1.5 md:h-2 rounded-full overflow-hidden" style="background: #ffffff08;">
 									<div
 										class="h-full rounded-full transition-all duration-300"
 										style="width: {barWidth}%; background: {c.color}; opacity: {tab === selectedTab ? 1 : 0.4};"
 									></div>
 								</div>
-								<span class="font-mono text-[11px] w-16 shrink-0" style="color: {c.color};">
+								<span class="hidden md:block font-mono text-[11px] w-16 shrink-0" style="color: {c.color};">
 									{d.label}
 								</span>
 							</div>
@@ -290,6 +290,10 @@
 	}
 
 	/* Shiki output styling */
+	.shiki-container {
+		background: #0a0e1a;
+	}
+
 	.shiki-container :global(pre.shiki) {
 		padding: 1rem;
 		margin: 0;

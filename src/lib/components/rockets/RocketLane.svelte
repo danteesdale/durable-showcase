@@ -561,7 +561,7 @@
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
-			class="md:hidden absolute left-1 right-1 top-full z-50 p-3 rounded-lg border font-mono"
+			class="md:hidden absolute left-1 right-1 z-50 p-3 rounded-lg border font-mono {rocket.id === 'eda' ? 'bottom-full mb-1' : 'top-full mt-1'}"
 			onclick={(e) => e.stopPropagation()}
 			role="region"
 			style="
